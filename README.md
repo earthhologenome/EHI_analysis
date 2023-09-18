@@ -6,6 +6,7 @@ The EHI pipeline currently output 5 data files under gz compression. Each file c
 
 ### Microbiome count table
 > [BATCH]_counts.tsv.gz
+
 It is a contingency table containing the number of sequencing reads from each sample mapped against each MAG, with MAG identifiers in rows and sample identifiers in columns.
 
 ### Microbiome coverage table
