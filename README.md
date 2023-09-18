@@ -4,6 +4,10 @@ This repository will soon contain R code for analysis of EHI data.
 ## Analysis steps
 * Data summary
 * MAG catalogue characterisation
+* Sequencing depth assessment
+* Microbiome count data analysis
+* Microbiome taxonomic composition analysis
+* Microbiome diversity  analysis
 
 ## EHI data outputs
 The EHI pipeline currently output 5 data files under gz compression. Each file contains a different piece of information required for conducting downstream analyses. Four files are tab-separated tables (tsv), while the fifth one is a Newick-format tree.  The name of each file always begins with the batch number followed by their respective identifier and extension.
