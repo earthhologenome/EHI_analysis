@@ -12,6 +12,15 @@ It is a contingency table containing the number of sequencing reads from each sa
 ### Microbiome coverage table
 > [BATCH]_coverage.tsv.gz
 
+It has the same structure as the count table, but contains breadth-of-coverage information of each MAG in each sample. In other words, it contains the fraction of the genomes covered by mapped reads in each sample.
+
+     ----
+---
+----------      
+__________        __________
+
+100% coverage
+
 ### Sample metadata table
 > [BATCH]_metadata.tsv.gz
 
