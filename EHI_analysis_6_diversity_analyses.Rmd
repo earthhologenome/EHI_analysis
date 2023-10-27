@@ -1,0 +1,26 @@
+---
+title: "EHI analysis - 6. Diversity analyses"
+author: "Earth Hologenome Initiative"
+date: "10/27/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+This workflow performs diversity analyses of the count data generated through the EHI pipeline. Note the workflow relies on previous scripts, so make sure you go through the general pipeline before starting working on this document.
+
+# 1. Alpha diversity
+
+# 1.1 Alpha diversity metrics
+
+# 1.2 Alpha diversity plots
+
+# 2. Beta diversity
+
+# 2.1 Beta diversity tests
+
+# 2.2 Beta diversity plots
