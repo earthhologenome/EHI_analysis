@@ -13,14 +13,162 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This workflow performs diversity analyses of the count data generated through the EHI pipeline. Note the workflow relies on previous scripts, so make sure you go through the general pipeline before starting working on this document.
 
-# 1. Alpha diversity
 
-# 1.1 Alpha diversity metrics
+# 1. Preprocessing
 
-# 1.2 Alpha diversity plots
+In order to avoid issues with diversity computation is recommendable to remove samples and MAGs without count data.
 
-# 2. Beta diversity
+```{r diversity_filtering, eval=FALSE}
+#Get list of present MAGs
+present_MAGs <- count_table_cov_size %>%
+		filter(rowSums(.[, -1]) != 0) %>%
+		rownames()
 
-# 2.1 Beta diversity tests
+#Remove samples with all zeros (no data after filtering)
+count_table_cov_size <- count_table_cov_size %>%
+  select_if(~!all(. == 0))
 
-# 2.2 Beta diversity plots
+#Align KEGG annotations with present MAGs and remove all-zero and all-one traits
+present_MAGs <- present_MAGs[present_MAGs %in% rownames(kegg_table)]
+kegg_table_filt <- kegg_table[present_MAGs,] %>%
+			select_if(~!all(. == 0)) %>%  #remove all-zero modules
+			select_if(~!all(. == 1)) #remove all-one modules
+}
+
+#Filter count table to only contain present MAGs after KEGG filtering
+count_table_cov_size_filt <- count_table_cov_size[present_MAGs,]
+```
+# 2. Alpha diversity
+
+# 2.1 Alpha diversity metrics
+
+```{r alpha_diversity, eval=FALSE}
+q0n <- hilldiv(count_table_cov_size,q=0) %>% c()
+q1n <- hilldiv(count_table_cov_size,q=1) %>% c()
+q1p <- hilldiv(count_table_cov_size,q=1,tree=tree) %>% c()
+dist <- traits2dist(kegg_table_filt, method="gower")
+q1f <- hilldiv(count_table_cov_size_filt,q=1,dist=dist) %>% c()
+
+# Merge all metrics
+alpha_div <- cbind(sample=colnames(count_table_cov_size),richness=q0n,neutral=round(q1n,3),phylo=round(q1p,3),func=round(q1f,3)) %>%
+  as.data.frame()
+columns <- c("richness","neutral","phylo","func","mapped","total")
+
+# Add amount of sequencing data to the table
+alpha_div <- alpha_div %>%
+  left_join(sequence_fractions, by = join_by(sample == sample)) %>% #add sequencing depth information
+  mutate(mapped=round(mags_bases/1000000000,3)) %>% #modify depth to million reads
+  mutate(total=round((mags_bases+unmapped_bases+host_bases+lowqual_bases)/1000000000,3)) %>%
+  select(sample,richness,neutral,phylo,func,mapped,total) %>%
+  mutate(across(-1, as.numeric))
+```
+
+# 2.2 Alpha diversity plots
+
+```{r alpha_diversity_plot, eval=FALSE}
+#+ alpha_divs_plot, echo=FALSE, warning=FALSE, fig.height=6
+alpha_div %>%
+		pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+		mutate(data = factor(data, levels = columns))	%>%
+		ggplot(aes(x=value, y=sample)) +
+			geom_bar(stat='identity', fill="#6c9ebc") +
+			facet_wrap(~data,  scales="free_x", ncol=6) +
+			theme_classic() +
+			theme(
+				strip.background = element_blank(),
+				panel.grid.minor.x = element_line( size=.1, color="grey" ),
+				axis.title.x = element_blank(),
+				axis.title.y = element_blank(),
+				axis.text.x = element_text(angle = 45, hjust = 1)
+			)
+```
+
+You can also generate an HTML table using knitr.
+
+```{r alpha_diversity_table, eval=FALSE}
+kable(alpha_div, caption="Mapped and Total amount of data are shown in GB (gigabases)")
+```
+
+# 2.3 Alpha diversity comparisons
+
+```{r alpha_divs_comp_groups, eval=FALSE}
+group_n <- alpha_div %>% select(sample,neutral) %>%
+		left_join(sample_table, by = join_by(sample == sample)) %>%
+		mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
+		select(location) %>% pull() %>% unique() %>% length()
+```
+
+```{r alpha_divs_comp_neutral, eval=FALSE}
+if(group_n>1 && group_n<=8){
+	alpha_div %>%
+			select(sample,neutral) %>%
+			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+			mutate(data = factor(data, levels = columns))	%>%
+			left_join(sample_table, by = join_by(sample == sample)) %>%
+			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
+			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
+					scale_color_manual(values=alpha_colors[c(1:group_n)]) +
+					scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
+					stat_compare_means() +
+					theme_classic() +
+					labs(y = "Neutral Hill numbers") +
+					theme(
+						legend.position = "top",
+						legend.box = "horizontal",
+						axis.title.x = element_blank(),
+						axis.text.x = element_blank()) +
+					guides(color=guide_legend(title="Location"), fill="none")
+}
+```
+
+```{r alpha_divs_comp_phylo, eval=FALSE}
+if(group_n>1 && group_n<=8){
+	alpha_div %>%
+			select(sample,phylo) %>%
+			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+			mutate(data = factor(data, levels = columns))	%>%
+			left_join(sample_table, by = join_by(sample == sample)) %>%
+			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
+			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
+			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
+			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
+			stat_compare_means() +
+			theme_classic() +
+			labs(y = "Phylogenetic Hill numbers") +
+			theme(
+				legend.position = "none",
+				axis.title.x = element_blank(),
+				axis.text.x = element_blank())
+}
+```
+
+```{r alpha_divs_comp_func, eval=FALSE}
+if(group_n>1 && group_n<=8 && func == "yes"){
+	alpha_div %>%
+			select(sample,func) %>%
+			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+			mutate(data = factor(data, levels = columns))	%>%
+			left_join(sample_table, by = join_by(sample == sample)) %>%
+			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
+			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
+			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
+			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
+			stat_compare_means() +
+			theme_classic() +
+			labs(y = "Functional Hill numbers") +
+			theme(
+				legend.position = "none",
+				axis.title.x = element_blank(),
+				axis.text.x = element_blank())
+}
+```
+
+# 3. Beta diversity
+
+Pairwise beta diversities quantify the dissimilarity between samples. Within the Hill numbers framework, beta diversities can be calculated for neutral, phylogenetic and functional diversities, at the desired order of diversity (q-value). Often times, beta diversities differ depending on the components of the diversity. For instance, phylogenetic and functional diversities often display lower beta values than neutral diversities due to phylogenetic and functional redundancy of the microbiota (i.e. different yet closely related and functionally similar MAGs replace each other). Pairwise beta diversities can be displayed in a 2-dimensional ordination using NMDS, and can be used to test for compositional differences between variables of interest. Note that outliers (often technical failures) can distort the ordination considerably.
+
+# 3.1 Beta diversity tests
+
+In the following pages, PERMANOVAs are conducted against all metadata variables with >1 different values, and NMDS ordinations are displayed for all metadata features containing between 2 and 8 different values.
+
+# 3.2 Beta diversity plots

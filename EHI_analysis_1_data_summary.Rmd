@@ -26,6 +26,7 @@ The pipeline requires the following packages to be installed in your R environme
 
 ```{r install_packages, eval=FALSE}
 # These packages can be installed from CRAN
+install.packages("R.utils")
 install.packages("knitr")
 install.packages("tidyverse")
 install.packages("ape")
@@ -49,7 +50,8 @@ install_github("anttonalberdi/hilldiv2")
 
 All those packages then need to be loaded to your R environment.
 
-```{r load_packages, eval=FALSE}
+```{r load_packages}
+suppressPackageStartupMessages(library(R.utils))
 suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(ape))
@@ -87,15 +89,28 @@ The EHI pipeline outputs six data files in analysis batches. Each batch is assig
 
 You first need to download these documents from the server, using the links in the EHI data report. In this workflow, we assume the files are downloaded to the folder "data" in your working environment.
 
-```{r load_data, eval=FALSE}
-batch="DMB0041"
+```{r load_data}
+# Batch
+batch="DMB0038"
+
+# Microbiome count table 
 count_table <- read.table(gunzip(paste0("data/",batch,"_counts.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
+
+# Microbiome coverage table
 coverage_table <- read.table(gunzip(paste0("data/",batch,"_coverage.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
+
+# Sample metadata table
 sample_table <- read.table(gunzip(paste0("data/",batch,"_metadata.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T) %>%
 	rename(sample=EHI_plaintext)
+
+# Microbiome metadata table
 mags_table <- read.table(gunzip(paste0("data/",batch,"_mag_info.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T)
 rownames(mags_table) <- mags_table[,1]
+
+# Microbiome phylogenetic tree
 tree <- read.tree(gunzip(paste0("data/",batch,".tree.gz"), remove=FALSE, overwrite=TRUE))
+
+# Microbiome functional attribute table
 kegg_table <- read.table(gunzip(paste0("data/",batch,"_merged_kegg.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T, row.names=1)
 ```
 
@@ -103,12 +118,9 @@ kegg_table <- read.table(gunzip(paste0("data/",batch,"_merged_kegg.tsv.gz"), rem
 
 You can then generate some general statistics to obtain an overview of your data.
 
-```{r general_stats_data, eval=FALSE}
+```{r general_stats_data}
 # Number of samples
 ncol(count_table)
-
-# Total amount of data in GBs (gigabases)
-(discarded_bases + host_bases + metagenomic_bases)/1000000000
 
 # Amount of data discarded due to low quality in GBs (gigabases)
 sum(round(((sample_table$metagenomic_bases+sample_table$host_bases)/(1-sample_table$bases_lost_fastp_percent))-(sample_table$metagenomic_bases+sample_table$host_bases)))/1000000000
@@ -123,7 +135,7 @@ sum(sample_table$metagenomic_bases)/1000000000
 sum(sample_table$metagenomic_bases * sample_table$singlem_fraction)/1000000000
 ```
 
-```{r general_stats_mags, eval=FALSE}
+```{r general_stats_mags}
 # Number of MAGs
 nrow(count_table)
 
@@ -144,7 +156,7 @@ mags_table %>%
 
 You can visualise the origin of your samples using the geographic information available in the sample metadata table. First you need to generate summary information containing unique sampling sites and the number of samples per site.
 
-```{r geography, eval=FALSE}
+```{r geography}
 #Summarise for generating map
 options(dplyr.summarise.inform = FALSE)
 sample_table_summary <- sample_table %>%
@@ -157,7 +169,7 @@ sample_table_summary <- sample_table %>%
 
 Then, this new table can be used to generate the map with location shape sizes indicating the number of samples.
 
-```{r geography_map, eval=FALSE}
+```{r geography_map, warning=FALSE}
 sample_table_summary %>%
 ggplot(.) +
     #render map
@@ -165,7 +177,7 @@ ggplot(.) +
       data=map_data("world"),
       map = map_data("world"),
       aes(long, lat, map_id=region),
-      color = "white", fill = "#cccccc", size = 0.2
+      color = "white", fill = "#cccccc", linewidth = 0.2
     ) +
     #render points
     geom_point(
@@ -181,9 +193,9 @@ ggplot(.) +
 
 You can also plot the summary table.
 
-```{r geography_table, eval=FALSE}
+```{r geography_table}
 sample_table %>%
-  select(sample,sample_type,country,latitude,longitude) %>%
+  select(sample,sample_type,region,country,latitude,longitude) %>%
   kable()
 ```
 
@@ -191,7 +203,9 @@ sample_table %>%
 
 For the sake of consistency through EHI projects, we have created a unified colour profile for bacterial and archaeal taxa. The palette assign similar colours to closely related phyla, and more distinct hues to distantly related phyla. The colour profile can be downloaded from Github, and store as an object in R for downstream analyses.
 
-```{r color_profile, eval=FALSE}
+https://github.com/earthhologenome/EHI_taxonomy_colour/edit/main/README.md
+
+```{r color_profile}
 # Download and load the phylum colour table
 colours_URL="https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv"
 download.file(colours_URL, "data/ehi_phylum_colors.tsv")
@@ -207,3 +221,4 @@ colors_alphabetic <- ehi_phylum_colors %>%
 	select(colors) %>%
 	pull()
 ```
+![Coloured GTDB 214 phylum tree](https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/phylum_tree.png)

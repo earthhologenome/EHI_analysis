@@ -9,6 +9,49 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r preps, echo=FALSE, warning=FALSE}
+# This code is required to run the scripts in this Rmd document
+# Explanations of the code are shown in the first document
+suppressPackageStartupMessages(library(R.utils))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(ape))
+suppressPackageStartupMessages(library(phytools))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(ggtree))
+suppressPackageStartupMessages(library(ggrepel))
+suppressPackageStartupMessages(library(ggpubr))
+suppressPackageStartupMessages(library(ggnewscale))
+suppressPackageStartupMessages(library(ggtreeExtra))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(hilldiv2))
+suppressPackageStartupMessages(library(spaa))
+suppressPackageStartupMessages(library(vegan))
+suppressPackageStartupMessages(library(Rtsne))
+
+batch="DMB0038"
+
+count_table <- read.table(gunzip(paste0("data/",batch,"_counts.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
+coverage_table <- read.table(gunzip(paste0("data/",batch,"_coverage.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
+sample_table <- read.table(gunzip(paste0("data/",batch,"_metadata.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T) %>%
+	rename(sample=EHI_plaintext)
+mags_table <- read.table(gunzip(paste0("data/",batch,"_mag_info.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T)
+rownames(mags_table) <- mags_table[,1]
+tree <- read.tree(gunzip(paste0("data/",batch,".tree.gz"), remove=FALSE, overwrite=TRUE))
+kegg_table <- read.table(gunzip(paste0("data/",batch,"_merged_kegg.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T, row.names=1)
+
+ehi_phylum_colors <- read.table("data/ehi_phylum_colors.tsv",sep="\t",header=T,comment.char = "")
+
+colors_alphabetic <- ehi_phylum_colors %>%
+  right_join(mags_table, by=join_by(phylum == phylum)) %>%
+	arrange(match(genome, tree$tip.label)) %>%
+  select(phylum, colors) %>%
+	unique() %>%
+	arrange(phylum) %>%
+	select(colors) %>%
+  pull()
+```
+
 # Introduction
 
 This workflow explores the characteristics of the MAG catalogue generated through the EHI pipeline. Note the workflow begins where the General analysis pipeline ends, so make sure you go through the general pipeline before starting working on this document.
@@ -21,7 +64,7 @@ You can visualise the phylogeny of MAGs in multiple ways. Here we describe a wor
 
 First, we need to prepare the MAG metadata we want to plot in the outer rings of the tree.
 
-```{r tree_metadata, eval=FALSE}
+```{r tree_metadata}
 # Which phylum the MAG belongs to
 phyla <- ehi_phylum_colors %>%
   right_join(mags_table, by=join_by(phylum == phylum)) %>%
@@ -53,7 +96,7 @@ heatmap <- ehi_phylum_colors %>%
 ## 1.2. Plot phylogenetic tree
 
 The next step is to plot the actual tree.
-```{r tree_plot, eval=FALSE}
+```{r tree_plot, warning=FALSE, comments="", message=FALSE, fig.height=6}
 # Create baseline circular tree
 circular_tree <- force.ultrametric(tree,method="extend") %>%
 	ggtree(., layout = 'circular', size = 0.3, angle=45)
@@ -101,7 +144,7 @@ circular_tree
 
 You can also create a custom phylum color legend using the following code.
 
-```{r tree_plot_legend, eval=FALSE}
+```{r tree_plot_legend, fig.height=1.5}
 # Create legend
 phyla_legend <- ehi_phylum_colors %>%
   right_join(mags_table, by=join_by(phylum == phylum)) %>%
@@ -132,7 +175,7 @@ These parameters are calculated by CheckM based on the presence of single-copy c
 
 You first need to prepare the input table from the original MAG metadata table.
 
-```{r mag_quality_table, eval=FALSE}
+```{r mag_quality_table}
 mag_details <- mags_table %>%
   select(c(genome,domain,phylum,completeness,contamination,mag_size)) %>%
   mutate(mag_size=round(mag_size/1000000,2)) %>% #change mag_size to MBs
@@ -145,7 +188,7 @@ mag_details <- mags_table %>%
 
 Using the code below you can create a plot in which MAGs are ordinated according to their completeness and contamination scores, while dot sizes indicate their genome-size.
 
-```{r mag_quality_biplot, eval=FALSE}
+```{r mag_quality_biplot}
 mag_stats_biplot <- mag_details %>%
 		ggplot(aes(x=comp,y=cont,size=size,color=phylum)) +
 		      geom_point(alpha=0.7) +
@@ -160,7 +203,7 @@ mag_stats_biplot <- mag_details %>%
 
 You can also create X and Y axis boxplots to complement the above plot and  better visualise MAG quality statistics.
 
-```{r mag_quality_contamination_boxplot, eval=FALSE}
+```{r mag_quality_contamination_boxplot}
 mag_stats_cont <- mag_details %>%
 			ggplot(aes(y=cont)) +
 					ylim(c(10,0)) +
@@ -176,7 +219,7 @@ mag_stats_cont <- mag_details %>%
 						plot.margin = unit(c(0, 0, 0.40, 0),"inches")) #add bottom-margin (top, right, bottom, left)
 ```
 
-```{r mag_quality_completeness_boxplot, eval=FALSE}
+```{r mag_quality_completeness_boxplot}
 mag_stats_comp <-mag_details %>%
 		ggplot(aes(x=comp)) +
 				xlim(c(50,100)) +
@@ -196,7 +239,7 @@ mag_stats_comp <-mag_details %>%
 
 Finally, you can plot a composite figure containing all above charts. The complex layout matrix only defines the space of each plot in the composite figure.
 
-```{r mag_quality_composite, eval=FALSE}
+```{r mag_quality_composite}
 grid.arrange(grobs = list(mag_stats_comp,mag_stats_biplot,mag_stats_cont),
 		layout_matrix = rbind(c(1,1,1,1,1,1,1,1,1,1,1,4),
 													c(2,2,2,2,2,2,2,2,2,2,2,3),
@@ -218,7 +261,7 @@ Prokaryotic genomes carry different sets of genes that confer their organisms wi
 
 Using the code below, you can create a heatmap with an associated phylogenetic tree showing how the MAG phylogenetic tree is associated with fullness (between 0-1) levels for each metabolic pathway.
 
-```{r mag_kegg_heatmap, eval=FALSE}
+```{r mag_kegg_heatmap, warning=FALSE, comments="", message=FALSE, fig.height=8}
 
 #Generate a basal utrametric tree for the sake of visualisation
 kegg_tree <- force.ultrametric(tree,method="extend") %>%
@@ -246,7 +289,7 @@ kegg_tree +
 
 Using the functional annotation, it is possible to ordinate prokaryotic genomes on a bidimentional space. In doing so, one can assess how close any group of bacteria are in functional terms, or how functionally diverse the members of a given phylum can be. In this example the ordination is conducted using the tSNE method.
 
-```{r mag_kegg_ordination, eval=FALSE}
+```{r mag_kegg_ordination}
 # Generate the tSNE ordination
 tSNE_func <- Rtsne(X=kegg_table, dims = 2, check_duplicates = FALSE)
 

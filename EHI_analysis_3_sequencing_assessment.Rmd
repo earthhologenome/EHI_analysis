@@ -9,6 +9,38 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r preps, echo=FALSE, warning=FALSE}
+# This code is required to run the scripts in this Rmd document
+# Explanations of the code are shown in the first document
+suppressPackageStartupMessages(library(R.utils))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(ape))
+suppressPackageStartupMessages(library(phytools))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(ggtree))
+suppressPackageStartupMessages(library(ggrepel))
+suppressPackageStartupMessages(library(ggpubr))
+suppressPackageStartupMessages(library(ggnewscale))
+suppressPackageStartupMessages(library(ggtreeExtra))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(hilldiv2))
+suppressPackageStartupMessages(library(spaa))
+suppressPackageStartupMessages(library(vegan))
+suppressPackageStartupMessages(library(Rtsne))
+
+batch="DMB0038"
+
+count_table <- read.table(gunzip(paste0("data/",batch,"_counts.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
+coverage_table <- read.table(gunzip(paste0("data/",batch,"_coverage.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
+sample_table <- read.table(gunzip(paste0("data/",batch,"_metadata.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T) %>%
+	rename(sample=EHI_plaintext)
+mags_table <- read.table(gunzip(paste0("data/",batch,"_mag_info.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T)
+rownames(mags_table) <- mags_table[,1]
+tree <- read.tree(gunzip(paste0("data/",batch,".tree.gz"), remove=FALSE, overwrite=TRUE))
+kegg_table <- read.table(gunzip(paste0("data/",batch,"_merged_kegg.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T, row.names=1)
+```
+
 # Introduction
 
 This workflow explores the characteristics of the MAG catalogue generated through the EHI pipeline. Note the workflow begins where the General analysis pipeline ends, so make sure you go through the general pipeline before starting working on this document.
@@ -19,7 +51,7 @@ When performing genome-resolved metagenomic analyses on host-associated microbia
 
 The following scripts generate a plot showing the distribution of reads across samples.
 
-```{r dna_fractions_table, eval=FALSE}
+```{r dna_fractions_table}
 sequence_fractions <- count_table %>%
   rownames_to_column("Genome") %>%
   pivot_longer(-Genome, names_to = "sample", values_to = "value") %>%
@@ -40,7 +72,7 @@ mags_bases_mean <- sequence_fractions %>%
 	mean()
 ```
 
-```{r dna_fractions_plot, eval=FALSE}
+```{r dna_fractions_plot}
   sequence_fractions %>%
   	pivot_longer(!sample, names_to = "fraction", values_to = "value") %>%
   	mutate(value = value / 1000000000) %>%
@@ -60,7 +92,7 @@ The main metric employed to assess the representativeness of a prokaryotic commu
 
 The following script generate a plot in which the difference between estimated vs. mapped prokaryotic fractions can be visualised. A longer the orange line indicates that the mapping rate is further away from the expected fraction of prokaryotic DNA. The absence of lines and brown dots indicate that the mapping rate and the estimated fraction match, so the representativeness is correct. When the mapping value is at zero, it indicates that not enough metagenomic data was generated for this type of analyses, usually due to excessive host DNA.
 
-```{r singlem_table, eval=FALSE}
+```{r singlem_table}
 singlem_table <- sequence_fractions %>%
 	mutate(mags_proportion = round((mags_bases / (mags_bases + unmapped_bases))*100,2)) %>%
 	left_join(sample_table, by = join_by(sample == sample))  %>%
@@ -72,7 +104,7 @@ singlem_table <- sequence_fractions %>%
 	mutate(singlem_proportion = ifelse(singlem_proportion > 100, 100, singlem_proportion)) #simplify
 ```
 
-```{r singlem_plot, eval=FALSE}
+```{r singlem_plot, warning=FALSE, comments="", message=FALSE}
 singlem_table %>%
 	pivot_longer(!sample, names_to = "proportion", values_to = "value") %>%
 	mutate(proportion = factor(proportion, levels = c("mags_proportion","singlem_proportion"))) %>%
@@ -89,7 +121,7 @@ singlem_table %>%
 
 Estimating the amount of host and metagenomic data required for robust hologenomic analyses is very complex, because these values are dependent on many system and study-specific factors. Here you will find the minimum data requirements that work for most systems, which take as reference a desired amount of 5GB of host DNA and 2GB of prokaryotic DNA. The calculations of extra sequencing required take into account the different fractions of sequencing data, including low-quality, host, MAG catalogue-mapped and other metagenomic reads. The bars exceeding the vertical dashed bar set at 20GB of data indicate that more than 20GBs are required to reach the desired amount of host or prokaryotic data. You can check the table for the actual value, but bear in mind that generating more than 20GB of data is economically prohibitive in most cases.
 
-```{r sequencing_table, eval=FALSE}
+```{r sequencing_table}
 # Define the aimed GBs for host and mapped metagenomic data
 mags_bases_aim=2
 host_bases_aim=5
@@ -111,7 +143,7 @@ sequence_fractions_required <- sequence_fractions %>%
 	select(sample,mags_bases,unmapped_bases,host_bases,lowqual_bases,meta_required,host_required)
 ```
 
-```{r sequencing_plot, eval=FALSE}
+```{r sequencing_plot}
 sequence_fractions_required %>%
 	select(sample,meta_required,host_required) %>%
 	mutate(meta_required = ifelse(meta_required > 20, 21, meta_required)) %>%
