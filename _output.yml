@@ -1,0 +1,17 @@
+bookdown::gitbook:
+  css: style.css
+  config:
+    toc:
+      before: |
+        <li class="toc-logo"><img src="images/ehi_logo.png" alt="Earth Hologenome Initiative"></li>
+        <li align="center"><b>ANALYSIS WORFLOW</b></li>
+      after: |
+        <li><a href="https://www.earthhologenome.org" target="blank"><b>Earth Hologenome Initiative</b></a></li>
+    download: ["pdf", "epub"]
+bookdown::pdf_book:
+  includes:
+    in_header: preamble.tex
+  latex_engine: xelatex
+  citation_package: natbib
+  keep_tex: yes
+bookdown::epub_book: default

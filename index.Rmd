@@ -1,0 +1,83 @@
+---
+title: "The Earth Hologenome Initiative Data Analysis Workflow"
+author:
+  - Ostaizka Aizpurua^[University of Copenhagen, ostaizka.aizpurua@sund.ku.dk]
+  - Antton Alberdi^[University of Copenhagen, antton.alberdu@sund.ku.dk]
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+documentclass: book
+bibliography: [book.bib, packages.bib]
+url: http://www.earthhologenome.org/analysis
+cover-image: images/ehi_logo.png
+description: |
+  Detailed information of the data analysis procedures employed in the Earth Hologenome Initiative.
+link-citations: yes
+github-repo: earthhologenome/EHI_analysis
+---
+
+# Introduction
+The Earth Hologenome Initiative (EHI, [www.earthhologenome.org](http://www.earthhologenome.org)) is a global collaborative endeavour aimed at promoting, facilitating, coordinating, and standardising hologenomic research on wild organisms worldwide. The EHI encompasses projects with diverse study designs and goals around standardised and open access sample collection and preservation, data generation and data management criteria.
+
+One of the main objectives of the EHI is to standardise optimal sampling, preservation, and laboratory methods based on open resources and knowledge. Currently, comparability and reproducibility of research data is one of the main issues of microbiome analyses, as molecular analysis of microbial communities is particularly sensitive to cross-contamination and variation in sample collection, preservation, and data generation (Aizpurua et al. 2023).
+
+Here we detail cost-effective procedures that can be reproduced, automated and deployed in different laboratories, which are used to generate high-quality hologenomic data in the EHI.
+
+
+
+## Prepare the environment
+
+The first step is to prepare your R environment. You must ensure you are at the appropriate working directory, and all required libraries are installed and loaded.
+
+```{r workdir, eval=FALSE}
+setwd("path_to_your_working_directory")
+dir_create("data") #to store EHI data files
+```
+
+The pipeline requires the following packages to be installed in your R environment.
+
+```{r install_packages, eval=FALSE}
+# These packages can be installed from CRAN
+install.packages("R.utils")
+install.packages("knitr")
+install.packages("tidyverse")
+install.packages("ape")
+install.packages("phytools")
+install.packages("ggplot2")
+install.packages("ggtree")
+install.packages("ggrepel")
+install.packages("ggpubr")
+install.packages("ggnewscale")
+install.packages("ggtreeExtra")
+install.packages("gridExtra")
+install.packages("spaa")
+install.packages("vegan")
+install.packages("Rtsne")
+install.packages("devtools")
+
+# This packages must be installed from Github using devtools
+library(devtools)
+install_github("anttonalberdi/hilldiv2")
+```
+
+All those packages then need to be loaded to your R environment.
+
+```{r load_packages}
+suppressPackageStartupMessages(library(R.utils))
+suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(ape))
+suppressPackageStartupMessages(library(phytools))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(ggtree))
+suppressPackageStartupMessages(library(ggrepel))
+suppressPackageStartupMessages(library(ggpubr))
+suppressPackageStartupMessages(library(ggnewscale))
+suppressPackageStartupMessages(library(ggtreeExtra))
+suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(hilldiv2))
+suppressPackageStartupMessages(library(spaa))
+suppressPackageStartupMessages(library(vegan))
+suppressPackageStartupMessages(library(Rtsne))
+```
+
+Now you are ready to begin your analysis.
