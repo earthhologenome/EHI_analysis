@@ -234,7 +234,7 @@ kegg_tree +
 
 Using the functional annotation, it is possible to ordinate prokaryotic genomes on a bidimentional space. In doing so, one can assess how close any group of bacteria are in functional terms, or how functionally diverse the members of a given phylum can be. In this example the ordination is conducted using the tSNE method.
 
-```{r mag_kegg_ordination}
+```{r mag_kegg_ordination, fig.height=9}
 # Generate the tSNE ordination
 tSNE_func <- Rtsne(X=kegg_table, dims = 2, check_duplicates = FALSE)
 
