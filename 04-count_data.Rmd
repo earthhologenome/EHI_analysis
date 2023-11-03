@@ -31,7 +31,7 @@ count_table_cov_size <- sweep(count_table_cov, 1, genome_read_sizes, "/")
 
 Once low-coverage genome counts have been filtered out, and the read counts have been normalised into genome counts, we can visualise the relative MAG abundances per sample. Note that the script shown below generates a count table in which the scale is log-transformed.
 
-```{r count_table}
+```{r count_table, warning=FALSE, comments="", message=FALSE, fig.height=12}
 vertical_tree <- force.ultrametric(tree,method="extend") %>%
 		ggtree(., size = 0.3)
 

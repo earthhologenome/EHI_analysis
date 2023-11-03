@@ -66,3 +66,15 @@ text-decoration: none;
 .summary > li:first-child {
   height: auto !important;
 }
+
+/*--- CODE chunks ---*/
+
+.script-source {
+  font-weight: bold !important;
+  border-left: 3px solid #87c941 !important;
+}
+
+
+.script-output {
+  background-color: #ffffff !important;
+}

@@ -2,13 +2,11 @@
 
 This workflow explores the characteristics of the MAG catalogue generated through the EHI pipeline. Note the workflow begins where the General analysis pipeline ends, so make sure you go through the general pipeline before starting working on this document.
 
-document.
-
 ## MAG phylogeny
 
 You can visualise the phylogeny of MAGs in multiple ways. Here we describe a workflow to generate a circular plot with a bunch of relevant information in outer rings.
 
-### Prepare MAG metadata
+### Prepare MAG metadata{-}
 
 First, we need to prepare the MAG metadata we want to plot in the outer rings of the tree.
 
@@ -41,10 +39,10 @@ heatmap <- ehi_phylum_colors %>%
 	column_to_rownames(var = "genome")
 ```
 
-### Plot phylogenetic tree
+### Plot phylogenetic tree{-}
 
 The next step is to plot the actual tree.
-```{r tree_plot, warning=FALSE, comments="", message=FALSE, fig.height=6}
+```{r tree_plot, warning=FALSE, comments="", message=FALSE, fig.height=8}
 # Create baseline circular tree
 circular_tree <- force.ultrametric(tree,method="extend") %>%
 	ggtree(., layout = 'circular', size = 0.3, angle=45)
@@ -60,35 +58,33 @@ circular_tree <- circular_tree + new_scale_fill()
 
 # Add completeness ring
 circular_tree <-  circular_tree +
-							new_scale_fill() +
-							scale_fill_gradient(low = "#d1f4ba", high = "#f4baba") +
-							geom_fruit(
-					         data=mags_table,
-					         geom=geom_bar,
-					         mapping = aes(x=completeness, y=genome, fill=contamination),
-									 offset = 0.55,
-									 orientation="y",
-			             stat="identity",
-					     )
+		new_scale_fill() +
+		scale_fill_gradient(low = "#d1f4ba", high = "#f4baba") +
+		geom_fruit(
+				data=mags_table,
+				geom=geom_bar,
+				mapping = aes(x=completeness, y=genome, fill=contamination),
+				offset = 0.55,
+				orientation="y",
+			  stat="identity")
 
 # Add genome-size ring
 circular_tree <-  circular_tree +
-				new_scale_fill() +
-				scale_fill_manual(values = "#cccccc") +
-				geom_fruit(
-		         data=mag_sizes,
-		         geom=geom_bar,
-		         mapping = aes(x=mag_size, y=genome),
-						 offset = 0.05,
-						 orientation="y",
-             stat="identity",
-		     )
+		new_scale_fill() +
+		scale_fill_manual(values = "#cccccc") +
+		geom_fruit(
+		     data=mag_sizes,
+		     geom=geom_bar,
+		     mapping = aes(x=mag_size, y=genome),
+				 offset = 0.05,
+				 orientation="y",
+         stat="identity")
 
 #Plot circular tree
 circular_tree
 ```
 
-### Plot phylum color legend
+### Plot phylum color legend{-}
 
 You can also create a custom phylum color legend using the following code.
 
@@ -119,7 +115,7 @@ You can next plot a 2-dimensional plot showing the two main parameters used to a
 
 These parameters are calculated by CheckM based on the presence of single-copy core genes in the MAGs. Completeness values should ideally be as close to 100 as possible, because incompleteness introduces biases when performing functional analyses. Contamination should be as close to 0 as possible, because it indicates that the MAG probably contains DNA fragments that in reality belong to a different genome, and therefore can distort the results and introduce noise.
 
-### Prepare input table
+### Prepare input table{-}
 
 You first need to prepare the input table from the original MAG metadata table.
 
@@ -132,7 +128,7 @@ mag_details <- mags_table %>%
   arrange(match(genome, rev(tree$tip.label))) #sort MAGs according to phylogenetic tree
 ```
 
-### Create biplot chart
+### Create biplot chart{-}
 
 Using the code below you can create a plot in which MAGs are ordinated according to their completeness and contamination scores, while dot sizes indicate their genome-size.
 
@@ -147,7 +143,7 @@ mag_stats_biplot <- mag_details %>%
 				  theme(legend.position = "none")
 ```
 
-### Create boxplot charts
+### Create boxplot charts{-}
 
 You can also create X and Y axis boxplots to complement the above plot and  better visualise MAG quality statistics.
 
@@ -183,7 +179,7 @@ mag_stats_comp <-mag_details %>%
 					plot.margin = unit(c(0, 0, 0, 0.50),"inches")) #add left-margin (top, right, bottom, left)
 ```
 
-### Create composite figure
+### Create composite figure{-}
 
 Finally, you can plot a composite figure containing all above charts. The complex layout matrix only defines the space of each plot in the composite figure.
 

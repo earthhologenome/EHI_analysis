@@ -4,17 +4,17 @@
 
 The EHI pipeline outputs six data files in analysis batches. Each batch is assigned a batch code in the form of DMB1234. DMB stands for Dereplication & Mapping Batch, which is the final step of the EHI pipeline. The six output files are:
 
-**Microbiome count table** (***[BATCH]_counts.tsv.gz***): this is a contingency table containing the number of sequencing reads from each sample mapped against each MAG, with MAG identifiers in rows and sample identifiers in columns.
+**Microbiome count table** ([BATCH]_counts.tsv.gz): this is a contingency table containing the number of sequencing reads from each sample mapped against each MAG, with MAG identifiers in rows and sample identifiers in columns.
 
-**Microbiome coverage table** (***[BATCH]_coverage.tsv.gz***): it has the same structure as the count table, but contains breadth-of-coverage information of each MAG in each sample. In other words, it contains the fraction of the genomes covered by mapped reads in each sample.
+**Microbiome coverage table** ([BATCH]_coverage.tsv.gz): it has the same structure as the count table, but contains breadth-of-coverage information of each MAG in each sample. In other words, it contains the fraction of the genomes covered by mapped reads in each sample.
 
-**Sample metadata table** (***[BATCH]_metadata.tsv.gz***): it contains relevant metadata of the samples, including geographic origin, host species, sample type and statistics of sample preprocessing.
+**Sample metadata table** ([BATCH]_metadata.tsv.gz): it contains relevant metadata of the samples, including geographic origin, host species, sample type and statistics of sample preprocessing.
 
-**Microbiome metadata table** (***[BATCH]_mag_info.tsv.gz***): it contains relevant metadata of the MAGs, including taxonomy, genome completeness, contamination/redundancy and other quality metrics.
+**Microbiome metadata table** ([BATCH]_mag_info.tsv.gz): it contains relevant metadata of the MAGs, including taxonomy, genome completeness, contamination/redundancy and other quality metrics.
 
-**Microbiome phylogenetic tree** (***[BATCH].tree.gz***): this is the phylogenetic tree of the MAGs derived from the GTDB master tree after pruning all reference genomes. This file is used for phylogenetic analyses.
+**Microbiome phylogenetic tree** ([BATCH].tree.gz): this is the phylogenetic tree of the MAGs derived from the GTDB master tree after pruning all reference genomes. This file is used for phylogenetic analyses.
 
-**Microbiome functional attribute table** (***[BATCH]_merged_kegg.tsv.gz***): this is a contingency table containing the  fullness levels of hundreds of KEGG modules, with MAG identifiers in rows and KEGG module identifiers in columns. This table is used for functional analyses.
+**Microbiome functional attribute table** ([BATCH]_merged_kegg.tsv.gz): this is a contingency table containing the  fullness levels of hundreds of KEGG modules, with MAG identifiers in rows and KEGG module identifiers in columns. This table is used for functional analyses.
 
 You first need to download these documents from the server, using the links in the EHI data report. In this workflow, we assume the files are downloaded to the folder "data" in your working environment.
 
@@ -23,57 +23,82 @@ You first need to download these documents from the server, using the links in t
 batch="DMB0038"
 
 # Microbiome count table
-count_table <- read.table(gunzip(paste0("data/",batch,"_counts.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
+count_table <- read.table(
+      gunzip(paste0("data/",batch,"_counts.tsv.gz"), remove=FALSE, overwrite=TRUE),
+      sep="\t",row.names=1,header=T)
 
 # Microbiome coverage table
-coverage_table <- read.table(gunzip(paste0("data/",batch,"_coverage.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
+coverage_table <- read.table(
+      gunzip(paste0("data/",batch,"_coverage.tsv.gz"), remove=FALSE, overwrite=TRUE),
+      sep="\t",row.names=1,header=T)
 
 # Sample metadata table
-sample_table <- read.table(gunzip(paste0("data/",batch,"_metadata.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T) %>%
-	rename(sample=EHI_plaintext)
+sample_table <- read.table(
+      gunzip(paste0("data/",batch,"_metadata.tsv.gz"), remove=FALSE, overwrite=TRUE),
+      sep="\t",header=T) %>%
+      rename(sample=EHI_plaintext) # rename column
 
 # Microbiome metadata table
-mags_table <- read.table(gunzip(paste0("data/",batch,"_mag_info.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T)
-rownames(mags_table) <- mags_table[,1]
+mags_table <- read.table(
+      gunzip(paste0("data/",batch,"_mag_info.tsv.gz"), remove=FALSE, overwrite=TRUE),
+      sep="\t",header=T)
+rownames(mags_table) <- mags_table[,1] # add row names
 
 # Microbiome phylogenetic tree
-tree <- read.tree(gunzip(paste0("data/",batch,".tree.gz"), remove=FALSE, overwrite=TRUE))
+tree <- read.tree(
+      gunzip(paste0("data/",batch,".tree.gz"), remove=FALSE, overwrite=TRUE))
 
 # Microbiome functional attribute table
-kegg_table <- read.table(gunzip(paste0("data/",batch,"_merged_kegg.tsv.gz"), remove=FALSE, overwrite=TRUE),sep="\t",header=T, row.names=1)
+kegg_table <- read.table(
+      gunzip(paste0("data/",batch,"_merged_kegg.tsv.gz"), remove=FALSE, overwrite=TRUE),
+      sep="\t",header=T, row.names=1)
 ```
 
-## General statistics
+## General data statistics
 
 You can then generate some general statistics to obtain an overview of your data.
 
-```{r general_stats_data}
-# Number of samples
+### Number of samples{-}
+```{r general_stats_data_1}
 ncol(count_table)
-
-# Amount of data discarded due to low quality in GBs (gigabases)
+```
+### Amount of discarded data{-}
+The value is in GBs (gigabases)
+```{r general_stats_data_2}
 sum(round(((sample_table$metagenomic_bases+sample_table$host_bases)/(1-sample_table$bases_lost_fastp_percent))-(sample_table$metagenomic_bases+sample_table$host_bases)))/1000000000
-
-# Amount of host data in GBs (gigabases)
+```
+### Amount of host data{-}
+The value is in GBs (gigabases)
+```{r general_stats_data_3}
 sum(sample_table$host_bases)/1000000000
-
-# Amount of metagenomic data in GBs (gigabases)
+```
+### Amount of metagenomic data{-}
+The value is in GBs (gigabases)
+```{r general_stats_data_4}
 sum(sample_table$metagenomic_bases)/1000000000
-
-# Amount of estimated prokaryotic data in GBs (gigabases)
+```
+### Amount of estimated prokaryotic{-}
+```{r general_stats_data_5}
 sum(sample_table$metagenomic_bases * sample_table$singlem_fraction)/1000000000
 ```
 
-```{r general_stats_mags}
-# Number of MAGs
-nrow(count_table)
+## General MAG statistics
 
-# Number of MAGs without species-level annotation or "new species"
+### Number of MAGs{-}
+
+```{r general_stats_mags_1}
+nrow(count_table)
+```
+### Number of MAGs without species-level annotation{-}
+These are the MAGs that could be considered "new" species
+```{r general_stats_mags_2}
 mags_table %>%
 	filter(species == "s__") %>%
 	nrow()
+```
 
-# Number of phylums
+### Number of phylums
+```{r general_stats_mags_3}
 mags_table %>%
 	select(phylum) %>%
   unique() %>%

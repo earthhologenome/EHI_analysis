@@ -8,6 +8,7 @@ bookdown::gitbook:
       after: |
         <li><a href="https://www.earthhologenome.org" target="blank"><b>Earth Hologenome Initiative</b></a></li>
     download: ["pdf", "epub"]
+  fig_width: 8
 bookdown::pdf_book:
   includes:
     in_header: preamble.tex

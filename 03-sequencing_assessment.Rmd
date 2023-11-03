@@ -61,7 +61,7 @@ singlem_table <- sequence_fractions %>%
 	mutate(singlem_proportion = ifelse(singlem_proportion > 100, 100, singlem_proportion)) #simplify
 ```
 
-```{r singlem_plot, warning=FALSE, comments="", message=FALSE}
+```{r singlem_plot, warning=FALSE, comments="", message=FALSE, fig.height=9}
 singlem_table %>%
 	pivot_longer(!sample, names_to = "proportion", values_to = "value") %>%
 	mutate(proportion = factor(proportion, levels = c("mags_proportion","singlem_proportion"))) %>%
@@ -100,7 +100,7 @@ sequence_fractions_required <- sequence_fractions %>%
 	select(sample,mags_bases,unmapped_bases,host_bases,lowqual_bases,meta_required,host_required)
 ```
 
-```{r sequencing_plot}
+```{r sequencing_plot, fig.height=9}
 sequence_fractions_required %>%
 	select(sample,meta_required,host_required) %>%
 	mutate(meta_required = ifelse(meta_required > 20, 21, meta_required)) %>%

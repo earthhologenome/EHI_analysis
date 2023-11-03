@@ -29,7 +29,7 @@ count_table_cov_size_filt <- count_table_cov_size[present_MAGs,]
 
 ## Alpha diversity
 
-### Alpha diversity metrics
+### Alpha diversity metrics{-}
 
 ```{r alpha_diversity, eval=FALSE}
 q0n <- hilldiv(count_table_cov_size,q=0) %>% c()
@@ -52,7 +52,7 @@ alpha_div <- alpha_div %>%
   mutate(across(-1, as.numeric))
 ```
 
-### Alpha diversity plots
+### Alpha diversity plots{-}
 
 ```{r alpha_diversity_plot, eval=FALSE}
 #+ alpha_divs_plot, echo=FALSE, warning=FALSE, fig.height=6
@@ -74,11 +74,11 @@ alpha_div %>%
 
 You can also generate an HTML table using knitr.
 
-```{r alpha_diversity_table, eval=FALSE}
+```{r alpha_diversity_table}
 kable(alpha_div, caption="Mapped and Total amount of data are shown in GB (gigabases)")
 ```
 
-### Alpha diversity comparisons
+### Alpha diversity comparisons{-}
 
 ```{r alpha_divs_comp_groups, eval=FALSE}
 group_n <- alpha_div %>% select(sample,neutral) %>%
@@ -156,8 +156,8 @@ if(group_n>1 && group_n<=8 && func == "yes"){
 
 Pairwise beta diversities quantify the dissimilarity between samples. Within the Hill numbers framework, beta diversities can be calculated for neutral, phylogenetic and functional diversities, at the desired order of diversity (q-value). Often times, beta diversities differ depending on the components of the diversity. For instance, phylogenetic and functional diversities often display lower beta values than neutral diversities due to phylogenetic and functional redundancy of the microbiota (i.e. different yet closely related and functionally similar MAGs replace each other). Pairwise beta diversities can be displayed in a 2-dimensional ordination using NMDS, and can be used to test for compositional differences between variables of interest. Note that outliers (often technical failures) can distort the ordination considerably.
 
-### Beta diversity tests
+### Beta diversity tests{-}
 
 In the following pages, PERMANOVAs are conducted against all metadata variables with >1 different values, and NMDS ordinations are displayed for all metadata features containing between 2 and 8 different values.
 
-### Beta diversity plots
+### Beta diversity plots{-}

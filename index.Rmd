@@ -14,23 +14,25 @@ description: |
 link-citations: yes
 github-repo: earthhologenome/EHI_analysis
 ---
+```{r knitr_opts, echo=FALSE}
+knitr::opts_chunk$set(
+    class.source = "script-source",
+    class.output = "script-output",
+    comment = NA)
+```
 
 # Introduction
 The Earth Hologenome Initiative (EHI, [www.earthhologenome.org](http://www.earthhologenome.org)) is a global collaborative endeavour aimed at promoting, facilitating, coordinating, and standardising hologenomic research on wild organisms worldwide. The EHI encompasses projects with diverse study designs and goals around standardised and open access sample collection and preservation, data generation and data management criteria.
 
-One of the main objectives of the EHI is to standardise optimal sampling, preservation, and laboratory methods based on open resources and knowledge. Currently, comparability and reproducibility of research data is one of the main issues of microbiome analyses, as molecular analysis of microbial communities is particularly sensitive to cross-contamination and variation in sample collection, preservation, and data generation (Aizpurua et al. 2023).
+One of the main objectives of the EHI is to facilitate analysis of animal genomic and microbial metagenomic data. Here, you will find resources to summarise, visualise and model data generated through the EHI pipeline.
 
-Here we detail cost-effective procedures that can be reproduced, automated and deployed in different laboratories, which are used to generate high-quality hologenomic data in the EHI.
-
-
-
-## Prepare the environment
+## Prepare the R environment
 
 The first step is to prepare your R environment. You must ensure you are at the appropriate working directory, and all required libraries are installed and loaded.
 
 ```{r workdir, eval=FALSE}
-setwd("path_to_your_working_directory")
-dir_create("data") #to store EHI data files
+setwd("path_to_your_working_directory") # Change this to your absolute working directory
+dir_create("data") #Create the data folder to store EHI data files
 ```
 
 The pipeline requires the following packages to be installed in your R environment.
@@ -78,6 +80,42 @@ suppressPackageStartupMessages(library(hilldiv2))
 suppressPackageStartupMessages(library(spaa))
 suppressPackageStartupMessages(library(vegan))
 suppressPackageStartupMessages(library(Rtsne))
+```
+
+## Download mock data
+
+If you want to reproduce the analyses shown in this website, you can download the mock data.
+
+```{r download_data, eval=FALSE}
+# Count table
+download.file(
+    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_counts.tsv.gz",
+    "data/DMB0038_counts.tsv.gz")
+
+# Coverage table
+download.file(
+    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_coverage.tsv.gz",
+    "data/DMB0038_coverage.tsv.gz")
+
+# MAG metadata table
+download.file(
+    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_mag_info.tsv.gz",
+    "data/DMB0038_mag_info.tsv.gz")
+
+# Sample metadata table
+download.file(
+    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_metadata.tsv.gz",
+    "data/DMB0038_metadata.tsv.gz")
+
+# MAG phylogenetic tree
+download.file(
+    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038.tree.gz",
+    "data/DMB0038.tree.gz")
+
+# MAG functional annotation table
+download.file(
+    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_merged_kegg.tsv.gz",
+    "data/DMB0038_merged_kegg.tsv.gz")
 ```
 
 Now you are ready to begin your analysis.
