@@ -8,7 +8,6 @@ site: bookdown::bookdown_site
 documentclass: book
 bibliography: [book.bib, packages.bib]
 url: http://www.earthhologenome.org/analysis
-cover-image: images/ehi_logo.png
 description: |
   Detailed information of the data analysis procedures employed in the Earth Hologenome Initiative.
 link-citations: yes
