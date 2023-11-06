@@ -2,7 +2,7 @@
 title: "The Earth Hologenome Initiative Data Analysis Workflow"
 author:
   - Ostaizka Aizpurua^[University of Copenhagen, ostaizka.aizpurua@sund.ku.dk]
-  - Antton Alberdi^[University of Copenhagen, antton.alberdu@sund.ku.dk]
+  - Antton Alberdi^[University of Copenhagen, antton.alberdi@sund.ku.dk]
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 documentclass: book
