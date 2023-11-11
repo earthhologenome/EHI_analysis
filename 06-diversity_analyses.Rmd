@@ -178,13 +178,7 @@ beta_colors <- c("#e5bd5b","#6b7398","#76b183","#d57d2c","#2a2d26","#f9d4cc","#3
 ```
 
 ```{r beta_neutral, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"}
-beta_q1n <- hillpair(count_table_cov_size,q=1) %>%
-				select(first,second,C) %>% #based on dissimilarity metric C
-				as.data.frame() %>%
-				pivot_wider(names_from = first, values_from = C) %>%
-				column_to_rownames(var = "second") %>%
-				as.matrix() %>%
-				as.dist()
+beta_q1n <- hillpair(count_table_cov_size,q=1, metric="S")
 ```
 
 ```{r beta_neutral_permanova_input, warning=FALSE, comments="", message=FALSE}
