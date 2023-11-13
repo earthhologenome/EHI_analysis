@@ -184,7 +184,6 @@ beta_q1n <- hillpair(count_table_cov_size, q=1, metric="S")
 ```{r beta_neutral_permanova_input, warning=FALSE, comments="", message=FALSE}
 sample_table_adonis <- sample_table %>%
 	filter(sample %in% labels(beta_q1n)) %>%
-	arrange(sample) %>%
 	mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
 	select(sample,location,region,country,species,sex,sample_type) %>%
 	select_if(~ length(unique(.)) > 1) %>% #remove columns with all-identical values
