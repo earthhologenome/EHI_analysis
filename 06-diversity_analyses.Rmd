@@ -7,23 +7,23 @@ This workflow performs diversity analyses of the count data generated through th
 In order to avoid issues with diversity computation is recommendable to remove samples and MAGs without count data.
 
 ```{r diversity_filtering}
-#Get list of present MAGs
+# Get list of present MAGs
 present_MAGs <- count_table_cov_size %>%
-		filter(rowSums(.[, -1]) != 0) %>%
-		rownames()
+  filter(rowSums(.[, -1]) != 0) %>%
+  rownames()
 
-#Remove samples with all zeros (no data after filtering)
+# Remove samples with all zeros (no data after filtering)
 count_table_cov_size <- count_table_cov_size %>%
-  select_if(~!all(. == 0))
+  select_if(~ !all(. == 0))
 
-#Align KEGG annotations with present MAGs and remove all-zero and all-one traits
+# Align KEGG annotations with present MAGs and remove all-zero and all-one traits
 present_MAGs <- present_MAGs[present_MAGs %in% rownames(kegg_table)]
-kegg_table_filt <- kegg_table[present_MAGs,] %>%
-			select_if(~!all(. == 0)) %>%  #remove all-zero modules
-			select_if(~!all(. == 1)) #remove all-one modules
+kegg_table_filt <- kegg_table[present_MAGs, ] %>%
+  select_if(~ !all(. == 0)) %>% # remove all-zero modules
+  select_if(~ !all(. == 1)) # remove all-one modules
 
-#Filter count table to only contain present MAGs after KEGG filtering
-count_table_cov_size_filt <- count_table_cov_size[present_MAGs,]
+# Filter count table to only contain present MAGs after KEGG filtering
+count_table_cov_size_filt <- count_table_cov_size[present_MAGs, ]
 ```
 
 ## Alpha diversity
@@ -31,23 +31,23 @@ count_table_cov_size_filt <- count_table_cov_size[present_MAGs,]
 ### Alpha diversity metrics{-}
 
 ```{r alpha_diversity, warning=FALSE, comments="", message=FALSE}
-q0n <- hilldiv(count_table_cov_size,q=0) %>% c()
-q1n <- hilldiv(count_table_cov_size,q=1) %>% c()
-q1p <- hilldiv(count_table_cov_size,q=1,tree=tree) %>% c()
-dist <- traits2dist(kegg_table_filt, method="gower")
-q1f <- hilldiv(count_table_cov_size_filt,q=1,dist=dist) %>% c()
+q0n <- hilldiv(count_table_cov_size, q = 0) %>% c()
+q1n <- hilldiv(count_table_cov_size, q = 1) %>% c()
+q1p <- hilldiv(count_table_cov_size, q = 1, tree = tree) %>% c()
+dist <- traits2dist(kegg_table_filt, method = "gower")
+q1f <- hilldiv(count_table_cov_size_filt, q = 1, dist = dist) %>% c()
 
 # Merge all metrics
-alpha_div <- cbind(sample=colnames(count_table_cov_size),richness=q0n,neutral=round(q1n,3),phylo=round(q1p,3),func=round(q1f,3)) %>%
+alpha_div <- cbind(sample = colnames(count_table_cov_size), richness = q0n, neutral = round(q1n, 3), phylo = round(q1p, 3), func = round(q1f, 3)) %>%
   as.data.frame()
-columns <- c("richness","neutral","phylo","func","mapped","total")
+columns <- c("richness", "neutral", "phylo", "func", "mapped", "total")
 
 # Add amount of sequencing data to the table
 alpha_div <- alpha_div %>%
-  left_join(sequence_fractions, by = join_by(sample == sample)) %>% #add sequencing depth information
-  mutate(mapped=round(mags_bases/1000000000,3)) %>% #modify depth to million reads
-  mutate(total=round((mags_bases+unmapped_bases+host_bases+lowqual_bases)/1000000000,3)) %>%
-  select(sample,richness,neutral,phylo,func,mapped,total) %>%
+  left_join(sequence_fractions, by = join_by(sample == sample)) %>% # add sequencing depth information
+  mutate(mapped = round(mags_bases / 1000000000, 3)) %>% # modify depth to million reads
+  mutate(total = round((mags_bases + unmapped_bases + host_bases + lowqual_bases) / 1000000000, 3)) %>%
+  select(sample, richness, neutral, phylo, func, mapped, total) %>%
   mutate(across(-1, as.numeric))
 ```
 
@@ -55,19 +55,19 @@ alpha_div <- alpha_div %>%
 
 ```{r alpha_diversity_plot, fig.height=8}
 alpha_div %>%
-		pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-		mutate(data = factor(data, levels = columns))	%>%
-		ggplot(aes(x=value, y=sample)) +
-			geom_bar(stat='identity', fill="#6c9ebc") +
-			facet_wrap(~data,  scales="free_x", ncol=6) +
-			theme_classic() +
-			theme(
-				strip.background = element_blank(),
-				panel.grid.minor.x = element_line( size=.1, color="grey" ),
-				axis.title.x = element_blank(),
-				axis.title.y = element_blank(),
-				axis.text.x = element_text(angle = 45, hjust = 1)
-			)
+  pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+  mutate(data = factor(data, levels = columns)) %>%
+  ggplot(aes(x = value, y = sample)) +
+  geom_bar(stat = "identity", fill = "#6c9ebc") +
+  facet_wrap(~data, scales = "free_x", ncol = 6) +
+  theme_classic() +
+  theme(
+    strip.background = element_blank(),
+    panel.grid.minor.x = element_line(size = .1, color = "grey"),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
 ```
 
 You can also generate an HTML table using knitr.
@@ -81,90 +81,97 @@ Alpha diversities can be compared across any categorical features that group ana
 
 Let's first create a nice colour palette for the localities
 ```{r alpha_colors}
-alpha_colors <- c("#e5bd5b","#6b7398","#76b183","#d57d2c","#2a2d26","#f9d4cc","#3c634e","#ea68c3")
+alpha_colors <- c("#e5bd5b", "#6b7398", "#76b183", "#d57d2c", "#2a2d26", "#f9d4cc", "#3c634e", "#ea68c3")
 ```
 
 Let's also identify the number of comparing groups, so that the colour palette can be subsetted properly when plotting the figures.
 ```{r alpha_divs_comp_groups}
-group_n <- alpha_div %>% select(sample,neutral) %>%
-		left_join(sample_table, by = join_by(sample == sample)) %>%
-		mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-		select(location) %>% pull() %>% unique() %>% length()
+group_n <- alpha_div %>%
+  select(sample, neutral) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+  select(location) %>%
+  pull() %>%
+  unique() %>%
+  length()
 ```
 
 #### Neutral diversity{-}
 ```{r alpha_divs_comp_neutral}
 alpha_div %>%
-			select(sample,neutral) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
-					scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-					scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-					stat_compare_means() +
-					theme_classic() +
-					labs(y = "Neutral Hill numbers") +
-					theme(
-						legend.position = "top",
-						legend.box = "horizontal",
-						axis.title.x = element_blank(),
-						axis.text.x = element_blank()) +
-					guides(color=guide_legend(title="Location"), fill="none")
+  select(sample, neutral) %>%
+  pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+  mutate(data = factor(data, levels = columns)) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+  ggboxplot(., x = "location", y = "value", color = "location", fill = "location") +
+  scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+  scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+  stat_compare_means() +
+  theme_classic() +
+  labs(y = "Neutral Hill numbers") +
+  theme(
+    legend.position = "top",
+    legend.box = "horizontal",
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  ) +
+  guides(color = guide_legend(title = "Location"), fill = "none")
 ```
 
 #### Phylogenetic diversity{-}
 ```{r alpha_divs_comp_phylo}
 alpha_div %>%
-			select(sample,phylo) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Phylogenetic Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+  select(sample, phylo) %>%
+  pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+  mutate(data = factor(data, levels = columns)) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+  ggboxplot(., x = "location", y = "value", color = "location", fill = "location") +
+  scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+  scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+  stat_compare_means() +
+  theme_classic() +
+  labs(y = "Phylogenetic Hill numbers") +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  )
 ```
 
 #### Functional diversity{-}
 ```{r alpha_divs_comp_func}
 alpha_div %>%
-			select(sample,func) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Functional Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+  select(sample, func) %>%
+  pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+  mutate(data = factor(data, levels = columns)) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+  ggboxplot(., x = "location", y = "value", color = "location", fill = "location") +
+  scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+  scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+  stat_compare_means() +
+  theme_classic() +
+  labs(y = "Functional Hill numbers") +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank()
+  )
 ```
 
 ### Relationship between alpha diversity and sequencing effort{-}
 The microbial diversity in a sample is often correlated with sequencing depth, mainly when the sequencing effort is not large enough to properly capture the entirety of the diversity in the sample. The following plot shows the relationship between neutral diversity (Hill number of q=1, Shannon diversity) and the GBs mapped to the MAG catalogue. The size of the dots indicates the total sequencing effort performed for that sample (including host DNA, non-mapped reads, etc.). The flatter the regression line the lower is the correlation, and thus lower is the effect of sequencing depth in the results. However, it must be noted that this analysis only compares the sequencing depth in relation to the MAG catalogue, which might not be complete or representative of the system. Hence, the results shown here must be interpreted cautiously.
 
 ```{r alpha_divs_seq_plot, warning=FALSE, comments="", message=FALSE, fig.height=8}
-ggplot(alpha_div, aes(x=mapped,y=neutral,label=sample)) +
-  		geom_smooth(method='lm', formula= y~x, color='#e08dde', fill='#e08dde') +
-      geom_point(alpha=0.5, color="#6c9ebc") +
-      geom_label_repel(max.overlaps = 100, cex=0.7) +
-      labs(x = "GBs mapped to MAGs", y = "Neutral diversity (effective number of MAGs)") +
-      theme_classic() +
-			theme(legend.position="none")
+ggplot(alpha_div, aes(x = mapped, y = neutral, label = sample)) +
+  geom_smooth(method = "lm", formula = y ~ x, color = "#e08dde", fill = "#e08dde") +
+  geom_point(alpha = 0.5, color = "#6c9ebc") +
+  geom_label_repel(max.overlaps = 100, cex = 0.7) +
+  labs(x = "GBs mapped to MAGs", y = "Neutral diversity (effective number of MAGs)") +
+  theme_classic() +
+  theme(legend.position = "none")
 ```
 
 ## Beta diversity
@@ -174,52 +181,52 @@ Pairwise beta diversities quantify the dissimilarity between samples. Within the
 ### Beta diversity test{-}
 
 ```{r beta_colors}
-beta_colors <- c("#e5bd5b","#6b7398","#76b183","#d57d2c","#2a2d26","#f9d4cc","#3c634e","#ea68c3")
+beta_colors <- c("#e5bd5b", "#6b7398", "#76b183", "#d57d2c", "#2a2d26", "#f9d4cc", "#3c634e", "#ea68c3")
 ```
 
 ```{r beta_neutral}
-beta_q1n <- hillpair(count_table_cov_size, q=1, metric="S")
+beta_q1n <- hillpair(count_table_cov_size, q = 1, metric = "S")
 ```
 
 ```{r beta_neutral_permanova_input, warning=FALSE, comments="", message=FALSE}
 sample_table_adonis <- sample_table %>%
-	filter(sample %in% labels(beta_q1n)) %>%
-	mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-	select(sample,location,region,country,species,sex,sample_type) %>%
-	select_if(~ length(unique(.)) > 1) %>% #remove columns with all-identical values
-	column_to_rownames(var = "sample") %>%
-	as.data.frame()
+  filter(sample %in% labels(beta_q1n)) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+  select(sample, location, region, country, species, sex, sample_type) %>%
+  select_if(~ length(unique(.)) > 1) %>% # remove columns with all-identical values
+  column_to_rownames(var = "sample") %>%
+  as.data.frame()
 ```
 
 ```{r beta_neutral_permanova, warning=FALSE, comments="", message=FALSE}
-	adonis2(formula=beta_q1n ~ ., data=sample_table_adonis[labels(beta_q1n),], permutations=999) %>%
-			as.matrix() %>%
-			kable()
+adonis2(formula = beta_q1n ~ ., data = sample_table_adonis[labels(beta_q1n), ], permutations = 999) %>%
+  as.matrix() %>%
+  kable()
 ```
 
 ### Beta diversity plot{-}
 
 ```{r beta_neutral_nmds, warning=FALSE, comments="", message=FALSE, results="hide"}
 beta_q1n_nmds <- beta_q1n %>%
-				metaMDS(.,trymax = 500, k=2, verbosity=FALSE) %>%
-				vegan::scores() %>%
-				as_tibble(., rownames = "sample") %>%
-				left_join(sample_table, by = join_by(sample == sample))
+  metaMDS(., trymax = 500, k = 2, verbosity = FALSE) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(sample_table, by = join_by(sample == sample))
 ```
 
 ```{r beta_neutral_nmds_plot, fig.height=7}
 group_n <- length(unique(beta_q1n_nmds$region))
 
 beta_q1n_nmds %>%
-			group_by(region) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=region)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Region"))
+  group_by(region) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(., aes(x = NMDS1, y = NMDS2, color = region)) +
+  scale_color_manual(values = beta_colors[c(1:group_n)]) +
+  geom_point(size = 2) +
+  geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+  theme_classic() +
+  theme(legend.position = "right", legend.box = "vertical") +
+  guides(color = guide_legend(title = "Region"))
 ```

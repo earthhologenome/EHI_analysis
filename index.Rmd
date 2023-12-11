@@ -15,9 +15,10 @@ github-repo: earthhologenome/EHI_analysis
 ---
 ```{r knitr_opts, echo=FALSE}
 knitr::opts_chunk$set(
-    class.source = "script-source",
-    class.output = "script-output",
-    comment = NA)
+  class.source = "script-source",
+  class.output = "script-output",
+  comment = NA
+)
 ```
 
 # Introduction
@@ -31,7 +32,7 @@ The first step is to prepare your R environment. You must ensure you are at the 
 
 ```{r workdir, eval=FALSE}
 setwd("path_to_your_working_directory") # Change this to your absolute working directory
-dir_create("data") #Create the data folder to store EHI data files
+dir_create("data") # Create the data folder to store EHI data files
 ```
 
 The pipeline requires the following packages to be installed in your R environment.
@@ -88,33 +89,39 @@ If you want to reproduce the analyses shown in this website, you can download th
 ```{r download_data, eval=FALSE}
 # Count table
 download.file(
-    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_counts.tsv.gz",
-    "data/DMB0038_counts.tsv.gz")
+  "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_counts.tsv.gz",
+  "data/DMB0038_counts.tsv.gz"
+)
 
 # Coverage table
 download.file(
-    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_coverage.tsv.gz",
-    "data/DMB0038_coverage.tsv.gz")
+  "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_coverage.tsv.gz",
+  "data/DMB0038_coverage.tsv.gz"
+)
 
 # MAG metadata table
 download.file(
-    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_mag_info.tsv.gz",
-    "data/DMB0038_mag_info.tsv.gz")
+  "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_mag_info.tsv.gz",
+  "data/DMB0038_mag_info.tsv.gz"
+)
 
 # Sample metadata table
 download.file(
-    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_metadata.tsv.gz",
-    "data/DMB0038_metadata.tsv.gz")
+  "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_metadata.tsv.gz",
+  "data/DMB0038_metadata.tsv.gz"
+)
 
 # MAG phylogenetic tree
 download.file(
-    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038.tree.gz",
-    "data/DMB0038.tree.gz")
+  "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038.tree.gz",
+  "data/DMB0038.tree.gz"
+)
 
 # MAG functional annotation table
 download.file(
-    "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_merged_kegg.tsv.gz",
-    "data/DMB0038_merged_kegg.tsv.gz")
+  "https://github.com/earthhologenome/EHI_analysis/raw/main/data/DMB0038_merged_kegg.tsv.gz",
+  "data/DMB0038_merged_kegg.tsv.gz"
+)
 ```
 
 Now you are ready to begin your analysis.

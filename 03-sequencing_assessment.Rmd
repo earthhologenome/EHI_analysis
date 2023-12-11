@@ -14,33 +14,33 @@ sequence_fractions <- count_table %>%
   pivot_longer(-Genome, names_to = "sample", values_to = "value") %>%
   group_by(sample) %>%
   summarise(mags = sum(value)) %>%
-	left_join(sample_table, by = join_by(sample == sample))  %>%
-	select(sample,mags,metagenomic_bases,host_bases,bases_lost_fastp_percent) %>%
-	mutate(mags_bases = mags*146) %>%
-	mutate(lowqual_bases = ((metagenomic_bases+host_bases)/(1-bases_lost_fastp_percent))-(metagenomic_bases+host_bases)) %>%
-	mutate(unmapped_bases = metagenomic_bases - mags_bases) %>%
-	mutate(unmapped_bases = ifelse(unmapped_bases < 0, 0, unmapped_bases)) %>%
-	select(sample,mags_bases,unmapped_bases,host_bases,lowqual_bases)
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  select(sample, mags, metagenomic_bases, host_bases, bases_lost_fastp_percent) %>%
+  mutate(mags_bases = mags * 146) %>%
+  mutate(lowqual_bases = ((metagenomic_bases + host_bases) / (1 - bases_lost_fastp_percent)) - (metagenomic_bases + host_bases)) %>%
+  mutate(unmapped_bases = metagenomic_bases - mags_bases) %>%
+  mutate(unmapped_bases = ifelse(unmapped_bases < 0, 0, unmapped_bases)) %>%
+  select(sample, mags_bases, unmapped_bases, host_bases, lowqual_bases)
 
 mags_bases_mean <- sequence_fractions %>%
-	mutate(mags_bases = mags_bases / 1000000000) %>%
-	select(mags_bases) %>%
-	pull() %>%
-	mean()
+  mutate(mags_bases = mags_bases / 1000000000) %>%
+  select(mags_bases) %>%
+  pull() %>%
+  mean()
 ```
 
 ```{r dna_fractions_plot}
-  sequence_fractions %>%
-  	pivot_longer(!sample, names_to = "fraction", values_to = "value") %>%
-  	mutate(value = value / 1000000000) %>%
-  	mutate(fraction = factor(fraction, levels = c("lowqual_bases","host_bases","unmapped_bases","mags_bases"))) %>%
-  	ggplot(., aes(x = sample, y = value, fill=fraction)) +
-  	    geom_bar(position="stack", stat = "identity") +
-  			scale_fill_manual(values=c("#CCCCCC","#178a94","#ee8080","#d03161")) +
-  	    geom_hline(yintercept = mags_bases_mean, linetype = "dashed", color = "black") +
-  	    labs(x = "Samples", y = "Amount of data (GB)") +
-  	    theme_classic() +
-  	    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size=6),legend.position = "bottom")
+sequence_fractions %>%
+  pivot_longer(!sample, names_to = "fraction", values_to = "value") %>%
+  mutate(value = value / 1000000000) %>%
+  mutate(fraction = factor(fraction, levels = c("lowqual_bases", "host_bases", "unmapped_bases", "mags_bases"))) %>%
+  ggplot(., aes(x = sample, y = value, fill = fraction)) +
+  geom_bar(position = "stack", stat = "identity") +
+  scale_fill_manual(values = c("#CCCCCC", "#178a94", "#ee8080", "#d03161")) +
+  geom_hline(yintercept = mags_bases_mean, linetype = "dashed", color = "black") +
+  labs(x = "Samples", y = "Amount of data (GB)") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 6), legend.position = "bottom")
 ```
 
 ## Estimated vs. mapped prokaryotic fraction
@@ -51,27 +51,27 @@ The following script generate a plot in which the difference between estimated v
 
 ```{r singlem_table}
 singlem_table <- sequence_fractions %>%
-	mutate(mags_proportion = round((mags_bases / (mags_bases + unmapped_bases))*100,2)) %>%
-	left_join(sample_table, by = join_by(sample == sample))  %>%
-	mutate(singlem_proportion = round(singlem_fraction*100,2)) %>%
-	select(sample,mags_proportion,singlem_proportion) %>%
-	mutate(mags_proportion = ifelse(singlem_proportion == 0, 0, mags_proportion)) %>% #convert zeros to NA
-	mutate(singlem_proportion = ifelse(singlem_proportion == 0, NA, singlem_proportion)) %>% #convert zeros to NA
-	mutate(singlem_proportion = ifelse(singlem_proportion < mags_proportion, NA, singlem_proportion)) %>% #if singlem is smaller, then NA, to simplify plot
-	mutate(singlem_proportion = ifelse(singlem_proportion > 100, 100, singlem_proportion)) #simplify
+  mutate(mags_proportion = round((mags_bases / (mags_bases + unmapped_bases)) * 100, 2)) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(singlem_proportion = round(singlem_fraction * 100, 2)) %>%
+  select(sample, mags_proportion, singlem_proportion) %>%
+  mutate(mags_proportion = ifelse(singlem_proportion == 0, 0, mags_proportion)) %>% # convert zeros to NA
+  mutate(singlem_proportion = ifelse(singlem_proportion == 0, NA, singlem_proportion)) %>% # convert zeros to NA
+  mutate(singlem_proportion = ifelse(singlem_proportion < mags_proportion, NA, singlem_proportion)) %>% # if singlem is smaller, then NA, to simplify plot
+  mutate(singlem_proportion = ifelse(singlem_proportion > 100, 100, singlem_proportion)) # simplify
 ```
 
 ```{r singlem_plot, warning=FALSE, comments="", message=FALSE, fig.height=9}
 singlem_table %>%
-	pivot_longer(!sample, names_to = "proportion", values_to = "value") %>%
-	mutate(proportion = factor(proportion, levels = c("mags_proportion","singlem_proportion"))) %>%
-	ggplot(., aes(x = value, y = sample, color=proportion)) +
-			geom_line(aes(group = sample), color = "#f8a538") +
-			geom_point() +
-			scale_color_manual(values=c("#52e1e8","#876b53")) +
-			theme_classic() +
-			labs(y = "Samples", x = "Prokaryotic fraction (%)") +
-	    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size=6),legend.position = "right")
+  pivot_longer(!sample, names_to = "proportion", values_to = "value") %>%
+  mutate(proportion = factor(proportion, levels = c("mags_proportion", "singlem_proportion"))) %>%
+  ggplot(., aes(x = value, y = sample, color = proportion)) +
+  geom_line(aes(group = sample), color = "#f8a538") +
+  geom_point() +
+  scale_color_manual(values = c("#52e1e8", "#876b53")) +
+  theme_classic() +
+  labs(y = "Samples", x = "Prokaryotic fraction (%)") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 6), legend.position = "right")
 ```
 
 ## Additional sequencing needed
@@ -80,39 +80,39 @@ Estimating the amount of host and metagenomic data required for robust hologenom
 
 ```{r sequencing_table}
 # Define the aimed GBs for host and mapped metagenomic data
-mags_bases_aim=2
-host_bases_aim=5
+mags_bases_aim <- 2
+host_bases_aim <- 5
 
 sequence_fractions_required <- sequence_fractions %>%
-	mutate(mags_bases = round(mags_bases / 1000000000,2)) %>%
-	mutate(unmapped_bases = round(unmapped_bases / 1000000000,2)) %>%
-	mutate(host_bases = round(host_bases / 1000000000,2)) %>%
-	mutate(lowqual_bases = round(lowqual_bases / 1000000000,2)) %>%
-	mutate(total_bases = mags_bases+unmapped_bases+host_bases+lowqual_bases) %>%
-	mutate(mags_bases_fraction = mags_bases/total_bases) %>%
-	mutate(mags_bases_difference = mags_bases_aim - mags_bases) %>%
-	mutate(meta_required = round(mags_bases_difference / mags_bases_fraction,2)) %>%
-	mutate(meta_required = ifelse(meta_required < 0, 0, meta_required)) %>%
-	mutate(host_bases_fraction = host_bases/total_bases) %>%
-	mutate(host_bases_difference = host_bases_aim - host_bases) %>%
-	mutate(host_required = round(host_bases_difference / host_bases_fraction,2)) %>%
-	mutate(host_required = ifelse(host_required < 0, 0, host_required)) %>%
-	select(sample,mags_bases,unmapped_bases,host_bases,lowqual_bases,meta_required,host_required)
+  mutate(mags_bases = round(mags_bases / 1000000000, 2)) %>%
+  mutate(unmapped_bases = round(unmapped_bases / 1000000000, 2)) %>%
+  mutate(host_bases = round(host_bases / 1000000000, 2)) %>%
+  mutate(lowqual_bases = round(lowqual_bases / 1000000000, 2)) %>%
+  mutate(total_bases = mags_bases + unmapped_bases + host_bases + lowqual_bases) %>%
+  mutate(mags_bases_fraction = mags_bases / total_bases) %>%
+  mutate(mags_bases_difference = mags_bases_aim - mags_bases) %>%
+  mutate(meta_required = round(mags_bases_difference / mags_bases_fraction, 2)) %>%
+  mutate(meta_required = ifelse(meta_required < 0, 0, meta_required)) %>%
+  mutate(host_bases_fraction = host_bases / total_bases) %>%
+  mutate(host_bases_difference = host_bases_aim - host_bases) %>%
+  mutate(host_required = round(host_bases_difference / host_bases_fraction, 2)) %>%
+  mutate(host_required = ifelse(host_required < 0, 0, host_required)) %>%
+  select(sample, mags_bases, unmapped_bases, host_bases, lowqual_bases, meta_required, host_required)
 ```
 
 ```{r sequencing_plot, fig.height=9}
 sequence_fractions_required %>%
-	select(sample,meta_required,host_required) %>%
-	mutate(meta_required = ifelse(meta_required > 20, 21, meta_required)) %>%
-	mutate(host_required = ifelse(host_required > 20, 21, host_required)) %>%
-	pivot_longer(!sample, names_to = "requirement", values_to = "value") %>%
-	mutate(requirement = factor(requirement, levels = c("host_required","meta_required"))) %>%
-	ggplot(., aes(x = value, y = sample, fill=requirement, group=requirement)) +
-	    geom_bar(position="stack", stat = "identity") +
-			scale_fill_manual(values=c("#178a94","#d03161")) +
-			facet_wrap(~requirement, scales="free_x") +
-			labs(x = "Amount of data (GB)", y = "Samples") +
-			geom_vline(xintercept = 20, linetype = "dashed", color = "black") +
-	    theme_classic() +
-	    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size=6),legend.position = "bottom")
+  select(sample, meta_required, host_required) %>%
+  mutate(meta_required = ifelse(meta_required > 20, 21, meta_required)) %>%
+  mutate(host_required = ifelse(host_required > 20, 21, host_required)) %>%
+  pivot_longer(!sample, names_to = "requirement", values_to = "value") %>%
+  mutate(requirement = factor(requirement, levels = c("host_required", "meta_required"))) %>%
+  ggplot(., aes(x = value, y = sample, fill = requirement, group = requirement)) +
+  geom_bar(position = "stack", stat = "identity") +
+  scale_fill_manual(values = c("#178a94", "#d03161")) +
+  facet_wrap(~requirement, scales = "free_x") +
+  labs(x = "Amount of data (GB)", y = "Samples") +
+  geom_vline(xintercept = 20, linetype = "dashed", color = "black") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 6), legend.position = "bottom")
 ```

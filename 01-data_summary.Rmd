@@ -20,38 +20,44 @@ You first need to download these documents from the server, using the links in t
 
 ```{r load_data}
 # Batch
-batch="DMB0038"
+batch <- "DMB0038"
 
 # Microbiome count table
 count_table <- read.table(
-      gunzip(paste0("data/",batch,"_counts.tsv.gz"), remove=FALSE, overwrite=TRUE),
-      sep="\t",row.names=1,header=T)
+  gunzip(paste0("data/", batch, "_counts.tsv.gz"), remove = FALSE, overwrite = TRUE),
+  sep = "\t", row.names = 1, header = T
+)
 
 # Microbiome coverage table
 coverage_table <- read.table(
-      gunzip(paste0("data/",batch,"_coverage.tsv.gz"), remove=FALSE, overwrite=TRUE),
-      sep="\t",row.names=1,header=T)
+  gunzip(paste0("data/", batch, "_coverage.tsv.gz"), remove = FALSE, overwrite = TRUE),
+  sep = "\t", row.names = 1, header = T
+)
 
 # Sample metadata table
 sample_table <- read.table(
-      gunzip(paste0("data/",batch,"_metadata.tsv.gz"), remove=FALSE, overwrite=TRUE),
-      sep="\t",header=T) %>%
-      rename(sample=EHI_plaintext) # rename column
+  gunzip(paste0("data/", batch, "_metadata.tsv.gz"), remove = FALSE, overwrite = TRUE),
+  sep = "\t", header = T
+) %>%
+  rename(sample = EHI_plaintext) # rename column
 
 # Microbiome metadata table
 mags_table <- read.table(
-      gunzip(paste0("data/",batch,"_mag_info.tsv.gz"), remove=FALSE, overwrite=TRUE),
-      sep="\t",header=T)
-rownames(mags_table) <- mags_table[,1] # add row names
+  gunzip(paste0("data/", batch, "_mag_info.tsv.gz"), remove = FALSE, overwrite = TRUE),
+  sep = "\t", header = T
+)
+rownames(mags_table) <- mags_table[, 1] # add row names
 
 # Microbiome phylogenetic tree
 tree <- read.tree(
-      gunzip(paste0("data/",batch,".tree.gz"), remove=FALSE, overwrite=TRUE))
+  gunzip(paste0("data/", batch, ".tree.gz"), remove = FALSE, overwrite = TRUE)
+)
 
 # Microbiome functional attribute table
 kegg_table <- read.table(
-      gunzip(paste0("data/",batch,"_merged_kegg.tsv.gz"), remove=FALSE, overwrite=TRUE),
-      sep="\t",header=T, row.names=1)
+  gunzip(paste0("data/", batch, "_merged_kegg.tsv.gz"), remove = FALSE, overwrite = TRUE),
+  sep = "\t", header = T, row.names = 1
+)
 ```
 
 ## General data statistics
@@ -65,21 +71,21 @@ ncol(count_table)
 ### Amount of discarded data{-}
 The value is in GBs (gigabases)
 ```{r general_stats_data_2}
-sum(round(((sample_table$metagenomic_bases+sample_table$host_bases)/(1-sample_table$bases_lost_fastp_percent))-(sample_table$metagenomic_bases+sample_table$host_bases)))/1000000000
+sum(round(((sample_table$metagenomic_bases + sample_table$host_bases) / (1 - sample_table$bases_lost_fastp_percent)) - (sample_table$metagenomic_bases + sample_table$host_bases))) / 1000000000
 ```
 ### Amount of host data{-}
 The value is in GBs (gigabases)
 ```{r general_stats_data_3}
-sum(sample_table$host_bases)/1000000000
+sum(sample_table$host_bases) / 1000000000
 ```
 ### Amount of metagenomic data{-}
 The value is in GBs (gigabases)
 ```{r general_stats_data_4}
-sum(sample_table$metagenomic_bases)/1000000000
+sum(sample_table$metagenomic_bases) / 1000000000
 ```
 ### Amount of estimated prokaryotic{-}
 ```{r general_stats_data_5}
-sum(sample_table$metagenomic_bases * sample_table$singlem_fraction)/1000000000
+sum(sample_table$metagenomic_bases * sample_table$singlem_fraction) / 1000000000
 ```
 
 ## General MAG statistics
@@ -93,17 +99,17 @@ nrow(count_table)
 These are the MAGs that could be considered "new" species
 ```{r general_stats_mags_2}
 mags_table %>%
-	filter(species == "s__") %>%
-	nrow()
+  filter(species == "s__") %>%
+  nrow()
 ```
 
 ### Number of phylums
 ```{r general_stats_mags_3}
 mags_table %>%
-	select(phylum) %>%
+  select(phylum) %>%
   unique() %>%
   pull() %>%
-	length()
+  length()
 ```
 
 ## Geographic distribution
@@ -111,10 +117,10 @@ mags_table %>%
 You can visualise the origin of your samples using the geographic information available in the sample metadata table. First you need to generate summary information containing unique sampling sites and the number of samples per site.
 
 ```{r geography}
-#Summarise for generating map
+# Summarise for generating map
 options(dplyr.summarise.inform = FALSE)
 sample_table_summary <- sample_table %>%
-  #Group by geography and count samples
+  # Group by geography and count samples
   select(sample, latitude, longitude, country) %>%
   group_by(latitude, longitude) %>%
   summarize(count = n()) %>%
@@ -125,31 +131,33 @@ Then, this new table can be used to generate the map with location shape sizes i
 
 ```{r geography_map, warning=FALSE}
 sample_table_summary %>%
-ggplot(.) +
-    #render map
-    geom_map(
-      data=map_data("world"),
-      map = map_data("world"),
-      aes(long, lat, map_id=region),
-      color = "white", fill = "#cccccc", linewidth = 0.2
-    ) +
-    #render points
-    geom_point(
-      aes(x=longitude,y=latitude, size=count),
-      alpha=0.5, shape=16) +
-    #add general plot layout
-    theme_minimal() +
-    theme(legend.position = "none",
-        axis.title.x=element_blank(),
-        axis.title.y=element_blank()
-      )
+  ggplot(.) +
+  # render map
+  geom_map(
+    data = map_data("world"),
+    map = map_data("world"),
+    aes(long, lat, map_id = region),
+    color = "white", fill = "#cccccc", linewidth = 0.2
+  ) +
+  # render points
+  geom_point(
+    aes(x = longitude, y = latitude, size = count),
+    alpha = 0.5, shape = 16
+  ) +
+  # add general plot layout
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank()
+  )
 ```
 
 You can also plot the summary table.
 
 ```{r geography_table}
 sample_table %>%
-  select(sample,sample_type,region,country,latitude,longitude) %>%
+  select(sample, sample_type, region, country, latitude, longitude) %>%
   kable()
 ```
 
@@ -162,18 +170,18 @@ https://github.com/earthhologenome/EHI_taxonomy_colour/edit/main/README.md
 
 ```{r color_profile}
 # Download and load the phylum colour table
-colours_URL="https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv"
+colours_URL <- "https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv"
 download.file(colours_URL, "data/ehi_phylum_colors.tsv")
-ehi_phylum_colors <- read.table("data/ehi_phylum_colors.tsv",sep="\t",header=T,comment.char = "")
+ehi_phylum_colors <- read.table("data/ehi_phylum_colors.tsv", sep = "\t", header = T, comment.char = "")
 
 # Arrange colors alphabetically
 colors_alphabetic <- ehi_phylum_colors %>%
-  right_join(mags_table, by=join_by(phylum == phylum)) %>%
-	arrange(match(genome, tree$tip.label)) %>%
+  right_join(mags_table, by = join_by(phylum == phylum)) %>%
+  arrange(match(genome, tree$tip.label)) %>%
   select(phylum, colors) %>%
-	unique() %>%
-	arrange(phylum) %>%
-	select(colors) %>%
-	pull()
+  unique() %>%
+  arrange(phylum) %>%
+  select(colors) %>%
+  pull()
 ```
 ![Coloured GTDB 214 phylum tree](https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/phylum_tree.png)

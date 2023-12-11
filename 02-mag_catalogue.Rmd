@@ -13,30 +13,30 @@ First, we need to prepare the MAG metadata we want to plot in the outer rings of
 ```{r tree_metadata}
 # Which phylum the MAG belongs to
 phyla <- ehi_phylum_colors %>%
-  right_join(mags_table, by=join_by(phylum == phylum)) %>%
-	arrange(match(genome, tree$tip.label)) %>%
+  right_join(mags_table, by = join_by(phylum == phylum)) %>%
+  arrange(match(genome, tree$tip.label)) %>%
   select(phylum, colors) %>%
-	unique()
+  unique()
 
 # What is the genome size of the MAG in MBs (megabases)
 mag_sizes <- mags_table %>%
-		  select(c(genome,mag_size)) %>%
-		  mutate(mag_size=round(mag_size/1000000,2))
+  select(c(genome, mag_size)) %>%
+  mutate(mag_size = round(mag_size / 1000000, 2))
 
 # What is the completeness of the MAG
 mag_completeness <- mags_table %>%
-		 select(c(genome,completeness)) %>%
-		 as.data.frame() %>%
-		 remove_rownames() %>%
-		 column_to_rownames(var = "genome")
+  select(c(genome, completeness)) %>%
+  as.data.frame() %>%
+  remove_rownames() %>%
+  column_to_rownames(var = "genome")
 
 # Generate the phylum color heatmap
 heatmap <- ehi_phylum_colors %>%
-  right_join(mags_table, by=join_by(phylum == phylum)) %>%
-	arrange(match(genome, tree$tip.label)) %>%
-  select(genome,phylum) %>%
-	mutate(phylum = factor(phylum, levels = unique(phylum))) %>%
-	column_to_rownames(var = "genome")
+  right_join(mags_table, by = join_by(phylum == phylum)) %>%
+  arrange(match(genome, tree$tip.label)) %>%
+  select(genome, phylum) %>%
+  mutate(phylum = factor(phylum, levels = unique(phylum))) %>%
+  column_to_rownames(var = "genome")
 ```
 
 ### Plot phylogenetic tree{-}
@@ -44,43 +44,45 @@ heatmap <- ehi_phylum_colors %>%
 The next step is to plot the actual tree.
 ```{r tree_plot, warning=FALSE, comments="", message=FALSE, fig.height=8}
 # Create baseline circular tree
-circular_tree <- force.ultrametric(tree,method="extend") %>%
-	ggtree(., layout = 'circular', size = 0.3, angle=45)
+circular_tree <- force.ultrametric(tree, method = "extend") %>%
+  ggtree(., layout = "circular", size = 0.3, angle = 45)
 
 # Add phylum colors ring
-circular_tree <- gheatmap(circular_tree, heatmap, offset=0.85, width=0.1, colnames=FALSE) +
-		scale_fill_manual(values=colors_alphabetic) +
-		geom_tiplab2(size=1, hjust=-0.1) +
-		theme(legend.position = "none", plot.margin = margin(0, 0, 0, 0), panel.margin = margin(0, 0, 0, 0))
+circular_tree <- gheatmap(circular_tree, heatmap, offset = 0.85, width = 0.1, colnames = FALSE) +
+  scale_fill_manual(values = colors_alphabetic) +
+  geom_tiplab2(size = 1, hjust = -0.1) +
+  theme(legend.position = "none", plot.margin = margin(0, 0, 0, 0), panel.margin = margin(0, 0, 0, 0))
 
 # Flush color scale to enable a new color scheme in the next ring
 circular_tree <- circular_tree + new_scale_fill()
 
 # Add completeness ring
-circular_tree <-  circular_tree +
-		new_scale_fill() +
-		scale_fill_gradient(low = "#d1f4ba", high = "#f4baba") +
-		geom_fruit(
-				data=mags_table,
-				geom=geom_bar,
-				mapping = aes(x=completeness, y=genome, fill=contamination),
-				offset = 0.55,
-				orientation="y",
-			  stat="identity")
+circular_tree <- circular_tree +
+  new_scale_fill() +
+  scale_fill_gradient(low = "#d1f4ba", high = "#f4baba") +
+  geom_fruit(
+    data = mags_table,
+    geom = geom_bar,
+    mapping = aes(x = completeness, y = genome, fill = contamination),
+    offset = 0.55,
+    orientation = "y",
+    stat = "identity"
+  )
 
 # Add genome-size ring
-circular_tree <-  circular_tree +
-		new_scale_fill() +
-		scale_fill_manual(values = "#cccccc") +
-		geom_fruit(
-		     data=mag_sizes,
-		     geom=geom_bar,
-		     mapping = aes(x=mag_size, y=genome),
-				 offset = 0.05,
-				 orientation="y",
-         stat="identity")
+circular_tree <- circular_tree +
+  new_scale_fill() +
+  scale_fill_manual(values = "#cccccc") +
+  geom_fruit(
+    data = mag_sizes,
+    geom = geom_bar,
+    mapping = aes(x = mag_size, y = genome),
+    offset = 0.05,
+    orientation = "y",
+    stat = "identity"
+  )
 
-#Plot circular tree
+# Plot circular tree
 circular_tree
 ```
 
@@ -91,19 +93,19 @@ You can also create a custom phylum color legend using the following code.
 ```{r tree_plot_legend, fig.height=1.5}
 # Create legend
 phyla_legend <- ehi_phylum_colors %>%
-  right_join(mags_table, by=join_by(phylum == phylum)) %>%
-	arrange(match(genome, tree$tip.label)) %>%
+  right_join(mags_table, by = join_by(phylum == phylum)) %>%
+  arrange(match(genome, tree$tip.label)) %>%
   select(phylum, colors) %>%
-	unique() %>%
-	mutate(phylum = gsub("p__","",phylum)) %>%
+  unique() %>%
+  mutate(phylum = gsub("p__", "", phylum)) %>%
   mutate(phylum = factor(phylum, levels = phylum)) %>%
-	ggplot() +
-	  geom_blank() +
-	  geom_rect(aes(xmin = 1:(nrow(phyla)) - 0.5, xmax = 1:(nrow(phyla)) + 0.5, ymin = 0.19, ymax = 0.2, fill = phylum)) +
-		scale_fill_manual(values=rev(phyla$colors)) +
-	  geom_text(aes(x = 1:(nrow(phyla)), y = 0.15, label = rev(phylum)), angle = 90, hjust = 0, size = 3) +
-	  theme_void() +
-	  theme(legend.position = "none")
+  ggplot() +
+  geom_blank() +
+  geom_rect(aes(xmin = 1:(nrow(phyla)) - 0.5, xmax = 1:(nrow(phyla)) + 0.5, ymin = 0.19, ymax = 0.2, fill = phylum)) +
+  scale_fill_manual(values = rev(phyla$colors)) +
+  geom_text(aes(x = 1:(nrow(phyla)), y = 0.15, label = rev(phylum)), angle = 90, hjust = 0, size = 3) +
+  theme_void() +
+  theme(legend.position = "none")
 
 # Plot legend
 phyla_legend
@@ -121,11 +123,11 @@ You first need to prepare the input table from the original MAG metadata table.
 
 ```{r mag_quality_table}
 mag_details <- mags_table %>%
-  select(c(genome,domain,phylum,completeness,contamination,mag_size)) %>%
-  mutate(mag_size=round(mag_size/1000000,2)) %>% #change mag_size to MBs
-  rename(comp=completeness,cont=contamination,size=mag_size) %>% #rename columns
+  select(c(genome, domain, phylum, completeness, contamination, mag_size)) %>%
+  mutate(mag_size = round(mag_size / 1000000, 2)) %>% # change mag_size to MBs
+  rename(comp = completeness, cont = contamination, size = mag_size) %>% # rename columns
   remove_rownames() %>%
-  arrange(match(genome, rev(tree$tip.label))) #sort MAGs according to phylogenetic tree
+  arrange(match(genome, rev(tree$tip.label))) # sort MAGs according to phylogenetic tree
 ```
 
 ### Create biplot chart{-}
@@ -134,13 +136,13 @@ Using the code below you can create a plot in which MAGs are ordinated according
 
 ```{r mag_quality_biplot}
 mag_stats_biplot <- mag_details %>%
-		ggplot(aes(x=comp,y=cont,size=size,color=phylum)) +
-		      geom_point(alpha=0.7) +
-					ylim(c(10,0)) +
-					scale_color_manual(values=colors_alphabetic) +
-				labs(y= "Contamination", x = "Completeness") +
-					theme_classic() +
-				  theme(legend.position = "none")
+  ggplot(aes(x = comp, y = cont, size = size, color = phylum)) +
+  geom_point(alpha = 0.7) +
+  ylim(c(10, 0)) +
+  scale_color_manual(values = colors_alphabetic) +
+  labs(y = "Contamination", x = "Completeness") +
+  theme_classic() +
+  theme(legend.position = "none")
 ```
 
 ### Create boxplot charts{-}
@@ -149,34 +151,38 @@ You can also create X and Y axis boxplots to complement the above plot and  bett
 
 ```{r mag_quality_contamination_boxplot}
 mag_stats_cont <- mag_details %>%
-			ggplot(aes(y=cont)) +
-					ylim(c(10,0)) +
-					geom_boxplot(colour = "#999999", fill="#cccccc") +
-					theme_void() +
-					theme(legend.position = "none",
-						axis.title.x = element_blank(),
-						axis.title.y = element_blank(),
-						axis.text.y=element_blank(),
-			      axis.ticks.y=element_blank(),
-						axis.text.x=element_blank(),
-			      axis.ticks.x=element_blank(),
-						plot.margin = unit(c(0, 0, 0.40, 0),"inches")) #add bottom-margin (top, right, bottom, left)
+  ggplot(aes(y = cont)) +
+  ylim(c(10, 0)) +
+  geom_boxplot(colour = "#999999", fill = "#cccccc") +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    plot.margin = unit(c(0, 0, 0.40, 0), "inches")
+  ) # add bottom-margin (top, right, bottom, left)
 ```
 
 ```{r mag_quality_completeness_boxplot}
-mag_stats_comp <-mag_details %>%
-		ggplot(aes(x=comp)) +
-				xlim(c(50,100)) +
-				geom_boxplot(colour = "#999999", fill="#cccccc") +
-				theme_void() +
-				theme(legend.position = "none",
-					axis.title.x = element_blank(),
-					axis.title.y = element_blank(),
-					axis.text.y=element_blank(),
-		      axis.ticks.y=element_blank(),
-					axis.text.x=element_blank(),
-		      axis.ticks.x=element_blank(),
-					plot.margin = unit(c(0, 0, 0, 0.50),"inches")) #add left-margin (top, right, bottom, left)
+mag_stats_comp <- mag_details %>%
+  ggplot(aes(x = comp)) +
+  xlim(c(50, 100)) +
+  geom_boxplot(colour = "#999999", fill = "#cccccc") +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    plot.margin = unit(c(0, 0, 0, 0.50), "inches")
+  ) # add left-margin (top, right, bottom, left)
 ```
 
 ### Create composite figure{-}
@@ -184,19 +190,23 @@ mag_stats_comp <-mag_details %>%
 Finally, you can plot a composite figure containing all above charts. The complex layout matrix only defines the space of each plot in the composite figure.
 
 ```{r mag_quality_composite}
-grid.arrange(grobs = list(mag_stats_comp,mag_stats_biplot,mag_stats_cont),
-		layout_matrix = rbind(c(1,1,1,1,1,1,1,1,1,1,1,4),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3)))
+grid.arrange(
+  grobs = list(mag_stats_comp, mag_stats_biplot, mag_stats_cont),
+  layout_matrix = rbind(
+    c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3)
+  )
+)
 ```
 
 
@@ -207,27 +217,26 @@ Prokaryotic genomes carry different sets of genes that confer their organisms wi
 Using the code below, you can create a heatmap with an associated phylogenetic tree showing how the MAG phylogenetic tree is associated with fullness (between 0-1) levels for each metabolic pathway.
 
 ```{r mag_kegg_heatmap, warning=FALSE, comments="", message=FALSE, fig.height=8}
+# Generate a basal utrametric tree for the sake of visualisation
+kegg_tree <- force.ultrametric(tree, method = "extend") %>%
+  ggtree(., size = 0.3)
 
-#Generate a basal utrametric tree for the sake of visualisation
-kegg_tree <- force.ultrametric(tree,method="extend") %>%
-				ggtree(., size = 0.3)
+# Add phylum colors next to the tree tips
+kegg_tree <- gheatmap(kegg_tree, heatmap, offset = 0, width = 0.1, colnames = FALSE) +
+  scale_fill_manual(values = colors_alphabetic)
 
-#Add phylum colors next to the tree tips
-	kegg_tree <- gheatmap(kegg_tree, heatmap, offset=0, width=0.1, colnames=FALSE) +
-			scale_fill_manual(values=colors_alphabetic)
-
-#Reset fill scale to use a different colour profile in the heatmap
+# Reset fill scale to use a different colour profile in the heatmap
 kegg_tree <- kegg_tree + new_scale_fill()
 
-#Add KEGG heatmap
-kegg_tree <- gheatmap(kegg_tree, kegg_table, offset=0.5, width=3.5, colnames=FALSE) +
-			vexpand(.08) +
-			coord_cartesian(clip = "off") +
-			scale_fill_gradient(low = "#f4f4f4", high = "steelblue", na.value="white")
+# Add KEGG heatmap
+kegg_tree <- gheatmap(kegg_tree, kegg_table, offset = 0.5, width = 3.5, colnames = FALSE) +
+  vexpand(.08) +
+  coord_cartesian(clip = "off") +
+  scale_fill_gradient(low = "#f4f4f4", high = "steelblue", na.value = "white")
 
-#Plot combined tree + heatmap
+# Plot combined tree + heatmap
 kegg_tree +
-			theme(legend.position='none')
+  theme(legend.position = "none")
 ```
 
 ## Functional ordination of MAGs
@@ -236,18 +245,18 @@ Using the functional annotation, it is possible to ordinate prokaryotic genomes 
 
 ```{r mag_kegg_ordination, fig.height=9}
 # Generate the tSNE ordination
-tSNE_func <- Rtsne(X=kegg_table, dims = 2, check_duplicates = FALSE)
+tSNE_func <- Rtsne(X = kegg_table, dims = 2, check_duplicates = FALSE)
 
 # Plot the ordination
 tSNE_func$Y %>%
-				as.data.frame() %>%
-				mutate(genome=rownames(kegg_table)) %>%
-				inner_join(mags_table, by="genome") %>%
-				rename(tSNE1="V1", tSNE2="V2") %>%
-				select(genome,phylum,tSNE1,tSNE2, completeness) %>%
-				ggplot(aes(x = tSNE1, y = tSNE2, color = phylum, size=completeness))+
-						    geom_point(shape=16, alpha=0.7) +
-						    scale_color_manual(values=colors_alphabetic) +
-						    theme_minimal() +
-						    theme(legend.position = "none")
+  as.data.frame() %>%
+  mutate(genome = rownames(kegg_table)) %>%
+  inner_join(mags_table, by = "genome") %>%
+  rename(tSNE1 = "V1", tSNE2 = "V2") %>%
+  select(genome, phylum, tSNE1, tSNE2, completeness) %>%
+  ggplot(aes(x = tSNE1, y = tSNE2, color = phylum, size = completeness)) +
+  geom_point(shape = 16, alpha = 0.7) +
+  scale_color_manual(values = colors_alphabetic) +
+  theme_minimal() +
+  theme(legend.position = "none")
 ```

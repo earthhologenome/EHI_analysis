@@ -30,7 +30,7 @@
 
 
 #+ load_libraries, echo=FALSE, warning=FALSE
-#Load libraries and data
+# Load libraries and data
 suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(ape))
@@ -51,24 +51,24 @@ suppressPackageStartupMessages(library(Rtsne))
 #+ load_data, echo=FALSE, warning=FALSE
 # Load all files produced by the EHI pipeline
 batch <- params$batch
-count_table <- read.table(gunzip(params$count_file, remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
-coverage_table <- read.table(gunzip(params$coverage_file, remove=FALSE, overwrite=TRUE),sep="\t",row.names=1,header=T)
-sample_table <- read.table(gunzip(params$sample_file, remove=FALSE, overwrite=TRUE),sep="\t",header=T) %>%
-	rename(sample=EHI_plaintext)
-mags_table <- read.table(gunzip(params$mags_file, remove=FALSE, overwrite=TRUE),sep="\t",header=T)
-rownames(mags_table) <- mags_table[,1]
-tree <- read.tree(gunzip(params$tree_file, remove=FALSE, overwrite=TRUE))
-if(file.exists(params$kegg_file)){
-	func = "yes"
-	kegg_table <- read.table(gunzip(params$kegg_file, remove=FALSE, overwrite=TRUE),sep="\t",header=T, row.names=1)
-}else{
-	func = "no"
+count_table <- read.table(gunzip(params$count_file, remove = FALSE, overwrite = TRUE), sep = "\t", row.names = 1, header = T)
+coverage_table <- read.table(gunzip(params$coverage_file, remove = FALSE, overwrite = TRUE), sep = "\t", row.names = 1, header = T)
+sample_table <- read.table(gunzip(params$sample_file, remove = FALSE, overwrite = TRUE), sep = "\t", header = T) %>%
+  rename(sample = EHI_plaintext)
+mags_table <- read.table(gunzip(params$mags_file, remove = FALSE, overwrite = TRUE), sep = "\t", header = T)
+rownames(mags_table) <- mags_table[, 1]
+tree <- read.tree(gunzip(params$tree_file, remove = FALSE, overwrite = TRUE))
+if (file.exists(params$kegg_file)) {
+  func <- "yes"
+  kegg_table <- read.table(gunzip(params$kegg_file, remove = FALSE, overwrite = TRUE), sep = "\t", header = T, row.names = 1)
+} else {
+  func <- "no"
 }
 #+ load_colors, echo=FALSE, warning=FALSE
 # Load EHI taxonomy colours
-colours_URL="https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv"
+colours_URL <- "https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv"
 download.file(colours_URL, "ehi_phylum_colors.tsv")
-ehi_phylum_colors <- read.table("ehi_phylum_colors.tsv",sep="\t",header=T,comment.char = "")
+ehi_phylum_colors <- read.table("ehi_phylum_colors.tsv", sep = "\t", header = T, comment.char = "")
 
 #' # Data availability
 #' The data used for generating this report is available through the following links:\newline
@@ -113,13 +113,13 @@ ehi_phylum_colors <- read.table("ehi_phylum_colors.tsv",sep="\t",header=T,commen
 nsamples <- ncol(count_table)
 metagenomic_bases <- sum(sample_table$metagenomic_bases)
 host_bases <- sum(sample_table$host_bases)
-discarded_bases <- sum(round(((sample_table$metagenomic_bases+sample_table$host_bases)/(1-sample_table$bases_lost_fastp_percent))-(sample_table$metagenomic_bases+sample_table$host_bases)))
+discarded_bases <- sum(round(((sample_table$metagenomic_bases + sample_table$host_bases) / (1 - sample_table$bases_lost_fastp_percent)) - (sample_table$metagenomic_bases + sample_table$host_bases)))
 total_bases <- discarded_bases + host_bases + metagenomic_bases
 singlem_bases <- sum(sample_table$metagenomic_bases * sample_table$singlem_fraction)
 nmags <- nrow(count_table)
 new_species <- mags_table %>%
-	filter(species == "s__") %>%
-	nrow()
+  filter(species == "s__") %>%
+  nrow()
 
 sequencing_depth <- colSums(count_table)
 sequencing_depth_sum <- sum(sequencing_depth)
@@ -198,47 +198,49 @@ sequencing_depth_sd <- sd(sequencing_depth)
 #' ## 1.2 Sample metadata
 #' The samples processed in this batch were collected in the following locations:
 #+ sample_map_frame, echo=FALSE, warning=FALSE
-#Calculate map frame
-maxlat <- max(sample_table$latitude)+10
-minlat <- min(sample_table$latitude)-10
-maxlon <- max(sample_table$longitude)+10
-minlot <- min(sample_table$longitude)-10
+# Calculate map frame
+maxlat <- max(sample_table$latitude) + 10
+minlat <- min(sample_table$latitude) - 10
+maxlon <- max(sample_table$longitude) + 10
+minlot <- min(sample_table$longitude) - 10
 
 #+ sample_summary, echo=FALSE, warning=FALSE, results='hide'
-#Summaryse for map
+# Summaryse for map
 options(dplyr.summarise.inform = FALSE)
 sample_table_summary <- sample_table %>%
-  #Group by geography and count samples
+  # Group by geography and count samples
   select(sample, latitude, longitude, country) %>%
   group_by(latitude, longitude) %>%
   summarize(count = n()) %>%
   ungroup()
 
 #+ sample_map, echo=FALSE, warning=FALSE, fig.height=4, fig.cap = "Geographic location of samples. Size indicates the number of samples."
-  #Print world map
-  sample_table_summary %>%
+# Print world map
+sample_table_summary %>%
   ggplot(.) +
-    geom_map(
-      data=map_data("world"),
-      map = map_data("world"),
-      aes(long, lat, map_id=region),
-      color = "white", fill = "#cccccc", size = 0.2
-    ) +
-    #Crop map
-    #coord_sf(xlim = c(minlot, maxlon), ylim = c(minlat, maxlat), expand = FALSE) +
-    geom_point(
-      aes(x=longitude,y=latitude, size=count),
-      alpha=0.5, shape=16) +
-    theme_minimal() +
-    theme(legend.position = "none",
-        axis.title.x=element_blank(),
-        axis.title.y=element_blank()
-      )
+  geom_map(
+    data = map_data("world"),
+    map = map_data("world"),
+    aes(long, lat, map_id = region),
+    color = "white", fill = "#cccccc", size = 0.2
+  ) +
+  # Crop map
+  # coord_sf(xlim = c(minlot, maxlon), ylim = c(minlat, maxlat), expand = FALSE) +
+  geom_point(
+    aes(x = longitude, y = latitude, size = count),
+    alpha = 0.5, shape = 16
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank()
+  )
 
 #+ sample_table, echo=FALSE, warning=FALSE
-#Sample table
+# Sample table
 sample_table %>%
-  select(sample,sample_type,country,latitude,longitude) %>%
+  select(sample, sample_type, country, latitude, longitude) %>%
   kable()
 
 #'
@@ -254,99 +256,99 @@ sample_table %>%
 
 #+ list_phyla, echo=FALSE, warning=FALSE
 phyla <- ehi_phylum_colors %>%
-  right_join(mags_table, by=join_by(phylum == phylum)) %>%
-	arrange(match(genome, tree$tip.label)) %>%
+  right_join(mags_table, by = join_by(phylum == phylum)) %>%
+  arrange(match(genome, tree$tip.label)) %>%
   select(phylum, colors) %>%
-	unique()
+  unique()
 
 mag_sizes <- mags_table %>%
-		  select(c(genome,mag_size)) %>%
-		  mutate(mag_size=round(mag_size/1000000,2))
+  select(c(genome, mag_size)) %>%
+  mutate(mag_size = round(mag_size / 1000000, 2))
 
 mag_completeness <- mags_table %>%
-		 select(c(genome,completeness)) %>%
-		 as.data.frame() %>%
-		 remove_rownames() %>%
-		 column_to_rownames(var = "genome")
+  select(c(genome, completeness)) %>%
+  as.data.frame() %>%
+  remove_rownames() %>%
+  column_to_rownames(var = "genome")
 
 #+ circular_tree_prep, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
 heatmap <- ehi_phylum_colors %>%
-  right_join(mags_table, by=join_by(phylum == phylum)) %>%
-	arrange(match(genome, tree$tip.label)) %>%
-  select(genome,phylum) %>%
-	mutate(phylum = factor(phylum, levels = unique(phylum))) %>%
-	column_to_rownames(var = "genome")
+  right_join(mags_table, by = join_by(phylum == phylum)) %>%
+  arrange(match(genome, tree$tip.label)) %>%
+  select(genome, phylum) %>%
+  mutate(phylum = factor(phylum, levels = unique(phylum))) %>%
+  column_to_rownames(var = "genome")
 
 colors_alphabetic <- ehi_phylum_colors %>%
-  right_join(mags_table, by=join_by(phylum == phylum)) %>%
-	arrange(match(genome, tree$tip.label)) %>%
+  right_join(mags_table, by = join_by(phylum == phylum)) %>%
+  arrange(match(genome, tree$tip.label)) %>%
   select(phylum, colors) %>%
-	unique() %>%
-	arrange(phylum) %>%
-	select(colors) %>%
-	pull()
+  unique() %>%
+  arrange(phylum) %>%
+  select(colors) %>%
+  pull()
 
-#Baseline tree
-circular_tree <- force.ultrametric(tree,method="extend") %>%
-	ggtree(., layout = 'circular', size = 0.3, angle=45)
+# Baseline tree
+circular_tree <- force.ultrametric(tree, method = "extend") %>%
+  ggtree(., layout = "circular", size = 0.3, angle = 45)
 
-#Add phylum colors ring
-circular_tree <- gheatmap(circular_tree, heatmap, offset=0.85, width=0.1, colnames=FALSE) +
-		scale_fill_manual(values=colors_alphabetic) +
-		geom_tiplab2(size=1, hjust=-0.1) +
-		theme(legend.position = "none", plot.margin = margin(0, 0, 0, 0), panel.margin = margin(0, 0, 0, 0))
+# Add phylum colors ring
+circular_tree <- gheatmap(circular_tree, heatmap, offset = 0.85, width = 0.1, colnames = FALSE) +
+  scale_fill_manual(values = colors_alphabetic) +
+  geom_tiplab2(size = 1, hjust = -0.1) +
+  theme(legend.position = "none", plot.margin = margin(0, 0, 0, 0), panel.margin = margin(0, 0, 0, 0))
 
-#Add completeness ring
+# Add completeness ring
 circular_tree <- circular_tree + new_scale_fill()
-#circular_tree <-	gheatmap(circular_tree, mag_completeness, offset=0.85, width=0.1, colnames=FALSE) +
-#			scale_fill_gradient(low = "#fde7a1", high = "#003a73") +
-#			theme(legend.position = "none", plot.margin = margin(0, 0, 0, 0), panel.margin = margin(0, 0, 0, 0))
+# circular_tree <-	gheatmap(circular_tree, mag_completeness, offset=0.85, width=0.1, colnames=FALSE) +
+# 			scale_fill_gradient(low = "#fde7a1", high = "#003a73") +
+# 			theme(legend.position = "none", plot.margin = margin(0, 0, 0, 0), panel.margin = margin(0, 0, 0, 0))
 
-circular_tree <-  circular_tree +
-							new_scale_fill() +
-							scale_fill_gradient(low = "#d1f4ba", high = "#f4baba") +
-							geom_fruit(
-					         data=mags_table,
-					         geom=geom_bar,
-					         mapping = aes(x=completeness, y=genome, fill=contamination),
-									 offset = 0.55,
-									 orientation="y",
-			             stat="identity",
-					     )
+circular_tree <- circular_tree +
+  new_scale_fill() +
+  scale_fill_gradient(low = "#d1f4ba", high = "#f4baba") +
+  geom_fruit(
+    data = mags_table,
+    geom = geom_bar,
+    mapping = aes(x = completeness, y = genome, fill = contamination),
+    offset = 0.55,
+    orientation = "y",
+    stat = "identity",
+  )
 
 
-#Add genome-size ring
-circular_tree <-  circular_tree +
-				new_scale_fill() +
-				scale_fill_manual(values = "#cccccc") +
-				geom_fruit(
-		         data=mag_sizes,
-		         geom=geom_bar,
-		         mapping = aes(x=mag_size, y=genome),
-						 offset = 0.05,
-						 orientation="y",
-             stat="identity",
-		     )
+# Add genome-size ring
+circular_tree <- circular_tree +
+  new_scale_fill() +
+  scale_fill_manual(values = "#cccccc") +
+  geom_fruit(
+    data = mag_sizes,
+    geom = geom_bar,
+    mapping = aes(x = mag_size, y = genome),
+    offset = 0.05,
+    orientation = "y",
+    stat = "identity",
+  )
 
 #+ circular_tree_plot, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=6
-#Plot complete chart
+# Plot complete chart
 circular_tree
 
 #+ phyla_colors, echo=FALSE, warning=FALSE, fig.height=1.5
 phyla_legend <- ehi_phylum_colors %>%
-  right_join(mags_table, by=join_by(phylum == phylum)) %>%
-	arrange(match(genome, tree$tip.label)) %>%
+  right_join(mags_table, by = join_by(phylum == phylum)) %>%
+  arrange(match(genome, tree$tip.label)) %>%
   select(phylum, colors) %>%
-	unique() %>%
-	mutate(phylum = gsub("p__","",phylum)) %>%
+  unique() %>%
+  mutate(phylum = gsub("p__", "", phylum)) %>%
   mutate(phylum = factor(phylum, levels = phylum)) %>%
-	ggplot() +
-	  geom_blank() +
-	  geom_rect(aes(xmin = 1:(nrow(phyla)) - 0.5, xmax = 1:(nrow(phyla)) + 0.5, ymin = 0.19, ymax = 0.2, fill = phylum)) +
-		scale_fill_manual(values=rev(phyla$colors)) +
-	  geom_text(aes(x = 1:(nrow(phyla)), y = 0.15, label = rev(phylum)), angle = 90, hjust = 0, size = 3) +
-	  theme_void() +
-	  theme(legend.position = "none")
+  ggplot() +
+  geom_blank() +
+  geom_rect(aes(xmin = 1:(nrow(phyla)) - 0.5, xmax = 1:(nrow(phyla)) + 0.5, ymin = 0.19, ymax = 0.2, fill = phylum)) +
+  scale_fill_manual(values = rev(phyla$colors)) +
+  geom_text(aes(x = 1:(nrow(phyla)), y = 0.15, label = rev(phylum)), angle = 90, hjust = 0, size = 3) +
+  theme_void() +
+  theme(legend.position = "none")
 
 phyla_legend
 
@@ -362,73 +364,81 @@ phyla_legend
 #' **[MAG feature table file](https://sid.erda.dk/share_redirect/BaMZodj9sA/DMB/`r params$batch`/`r params$batch`_mag_info.tsv.gz)**
 #+ calculate_mag_stats, echo=FALSE, warning=FALSE
 
-#Prepare table for the visualisations
+# Prepare table for the visualisations
 mag_details <- mags_table %>%
-  select(c(genome,domain,phylum,completeness,contamination,mag_size)) %>%
-  mutate(mag_size=round(mag_size/1000000,2)) %>% #change mag_size to MBs
-  rename(comp=completeness,cont=contamination,size=mag_size) %>% #rename columns
+  select(c(genome, domain, phylum, completeness, contamination, mag_size)) %>%
+  mutate(mag_size = round(mag_size / 1000000, 2)) %>% # change mag_size to MBs
+  rename(comp = completeness, cont = contamination, size = mag_size) %>% # rename columns
   remove_rownames() %>%
-  arrange(match(genome, rev(tree$tip.label))) #sort MAGs according to phylogenetic tree
+  arrange(match(genome, rev(tree$tip.label))) # sort MAGs according to phylogenetic tree
 
-#Create biplot with dot sizes indicating MAG size
+# Create biplot with dot sizes indicating MAG size
 mag_stats_biplot <- mag_details %>%
-		ggplot(aes(x=comp,y=cont,size=size,color=phylum)) +
-		      geom_point(alpha=0.7) +
-					ylim(c(10,0)) +
-					scale_color_manual(values=colors_alphabetic) +
-				labs(y= "Contamination", x = "Completeness") +
-					theme_classic() +
-				  theme(legend.position = "none")
+  ggplot(aes(x = comp, y = cont, size = size, color = phylum)) +
+  geom_point(alpha = 0.7) +
+  ylim(c(10, 0)) +
+  scale_color_manual(values = colors_alphabetic) +
+  labs(y = "Contamination", x = "Completeness") +
+  theme_classic() +
+  theme(legend.position = "none")
 
-#Contamination boxplot
+# Contamination boxplot
 mag_stats_cont <- mag_details %>%
-			ggplot(aes(y=cont)) +
-					ylim(c(10,0)) +
-					geom_boxplot(colour = "#999999", fill="#cccccc") +
-					theme_void() +
-					theme(legend.position = "none",
-						axis.title.x = element_blank(),
-						axis.title.y = element_blank(),
-						axis.text.y=element_blank(),
-			      axis.ticks.y=element_blank(),
-						axis.text.x=element_blank(),
-			      axis.ticks.x=element_blank(),
-						plot.margin = unit(c(0, 0, 0.40, 0),"inches")) #add bottom-margin (top, right, bottom, left)
+  ggplot(aes(y = cont)) +
+  ylim(c(10, 0)) +
+  geom_boxplot(colour = "#999999", fill = "#cccccc") +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    plot.margin = unit(c(0, 0, 0.40, 0), "inches")
+  ) # add bottom-margin (top, right, bottom, left)
 
-#Completeness boxplot
-mag_stats_comp <-mag_details %>%
-		ggplot(aes(x=comp)) +
-				xlim(c(50,100)) +
-				geom_boxplot(colour = "#999999", fill="#cccccc") +
-				theme_void() +
-				theme(legend.position = "none",
-					axis.title.x = element_blank(),
-					axis.title.y = element_blank(),
-					axis.text.y=element_blank(),
-		      axis.ticks.y=element_blank(),
-					axis.text.x=element_blank(),
-		      axis.ticks.x=element_blank(),
-					plot.margin = unit(c(0, 0, 0, 0.50),"inches")) #add left-margin (top, right, bottom, left)
+# Completeness boxplot
+mag_stats_comp <- mag_details %>%
+  ggplot(aes(x = comp)) +
+  xlim(c(50, 100)) +
+  geom_boxplot(colour = "#999999", fill = "#cccccc") +
+  theme_void() +
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    plot.margin = unit(c(0, 0, 0, 0.50), "inches")
+  ) # add left-margin (top, right, bottom, left)
 
 #+ plot_mag_stats, echo=FALSE, warning=FALSE, fig.height=5
-#Arrage the biplot and the boxplots properly
-grid.arrange(grobs = list(mag_stats_comp,mag_stats_biplot,mag_stats_cont),
-		layout_matrix = rbind(c(1,1,1,1,1,1,1,1,1,1,1,4),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3),
-													c(2,2,2,2,2,2,2,2,2,2,2,3)))
+# Arrage the biplot and the boxplots properly
+grid.arrange(
+  grobs = list(mag_stats_comp, mag_stats_biplot, mag_stats_cont),
+  layout_matrix = rbind(
+    c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3),
+    c(2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3)
+  )
+)
 
 #' \newpage
 #+ plot_mag_table, echo=FALSE, warning=FALSE
-  kable(mag_details)
+kable(mag_details)
 
 #' \newpage
 #' ## 2.3 Functional attributes of MAGs
@@ -439,26 +449,26 @@ grid.arrange(grobs = list(mag_stats_comp,mag_stats_biplot,mag_stats_cont),
 #' `r if(func == "no"){paste0("\n\nThis analysis was skipped because no functional data was inputed.\n")}`
 #+ kegg_heatmap, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=6
 
-if(func == "yes"){
-	kegg_tree <- force.ultrametric(tree,method="extend") %>%
-				ggtree(., size = 0.3)
+if (func == "yes") {
+  kegg_tree <- force.ultrametric(tree, method = "extend") %>%
+    ggtree(., size = 0.3)
 
-	#Add phylum colors
-	kegg_tree <- gheatmap(kegg_tree, heatmap, offset=0, width=0.1, colnames=FALSE) +
-			scale_fill_manual(values=colors_alphabetic)
+  # Add phylum colors
+  kegg_tree <- gheatmap(kegg_tree, heatmap, offset = 0, width = 0.1, colnames = FALSE) +
+    scale_fill_manual(values = colors_alphabetic)
 
-	#Reset fill scale
-	kegg_tree <- kegg_tree + new_scale_fill()
+  # Reset fill scale
+  kegg_tree <- kegg_tree + new_scale_fill()
 
-	#Add KEGG heatmap
-	kegg_tree <- gheatmap(kegg_tree, kegg_table, offset=0.5, width=3.5, colnames=FALSE) +
-			vexpand(.08) +
-			coord_cartesian(clip = "off") +
-			scale_fill_gradient(low = "#f4f4f4", high = "steelblue", na.value="white")
+  # Add KEGG heatmap
+  kegg_tree <- gheatmap(kegg_tree, kegg_table, offset = 0.5, width = 3.5, colnames = FALSE) +
+    vexpand(.08) +
+    coord_cartesian(clip = "off") +
+    scale_fill_gradient(low = "#f4f4f4", high = "steelblue", na.value = "white")
 
-	#Plot tree + heatmap
-	kegg_tree +
-			theme(legend.position='none')
+  # Plot tree + heatmap
+  kegg_tree +
+    theme(legend.position = "none")
 }
 
 #' \newpage
@@ -468,34 +478,36 @@ if(func == "yes"){
 #' phylum can be.
 #' `r if(func == "no"){paste0("\n\nThis analysis was skipped because no functional data was inputed.\n")}`
 #+ mag_tsne, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=6
-if(func == "yes"){
-	#Calculat tSNE coordinates
-	tryCatch({
-		tSNE_func <- Rtsne(X=kegg_table, dims = 2, check_duplicates = FALSE)
- 	}, error = function(e) {
- 	})
-	#Plot tSNE (only if the Rtsne function is successful)
-	if(exists("tSNE_func")){
-					tSNE_func$Y %>%
-						  as.data.frame() %>%
-						  mutate(genome=rownames(kegg_table)) %>%
-						  inner_join(mags_table, by="genome") %>%
-							rename(tSNE1="V1", tSNE2="V2") %>%
-							select(genome,phylum,tSNE1,tSNE2, completeness) %>%
-						    ggplot(aes(x = tSNE1, y = tSNE2, color = phylum, size=completeness))+
-						    geom_point(shape=16, alpha=0.7) +
-						    scale_color_manual(values=colors_alphabetic) +
-						    theme_minimal() +
-						    theme(legend.position = "none")
-		} else {
-			print("Functional ordination could not be created due to lack of sufficient data.\n")
-
-		}
+if (func == "yes") {
+  # Calculat tSNE coordinates
+  tryCatch(
+    {
+      tSNE_func <- Rtsne(X = kegg_table, dims = 2, check_duplicates = FALSE)
+    },
+    error = function(e) {
+    }
+  )
+  # Plot tSNE (only if the Rtsne function is successful)
+  if (exists("tSNE_func")) {
+    tSNE_func$Y %>%
+      as.data.frame() %>%
+      mutate(genome = rownames(kegg_table)) %>%
+      inner_join(mags_table, by = "genome") %>%
+      rename(tSNE1 = "V1", tSNE2 = "V2") %>%
+      select(genome, phylum, tSNE1, tSNE2, completeness) %>%
+      ggplot(aes(x = tSNE1, y = tSNE2, color = phylum, size = completeness)) +
+      geom_point(shape = 16, alpha = 0.7) +
+      scale_color_manual(values = colors_alphabetic) +
+      theme_minimal() +
+      theme(legend.position = "none")
+  } else {
+    print("Functional ordination could not be created due to lack of sufficient data.\n")
+  }
 }
 
 #+ phyla_colors2, echo=FALSE, warning=FALSE, fig.height=1.5
-if(func == "yes" && exists("tSNE_func")){
-	phyla_legend
+if (func == "yes" && exists("tSNE_func")) {
+  phyla_legend
 }
 
 #' \newpage
@@ -518,9 +530,9 @@ if(func == "yes" && exists("tSNE_func")){
 #+ echo=FALSE, warning=FALSE
 
 
-if(sequencing_depth_sd > sequencing_depth_mean){
+if (sequencing_depth_sd > sequencing_depth_mean) {
   seqwarning <- TRUE
-}else{
+} else {
   seqwarning <- FALSE
 }
 
@@ -533,32 +545,32 @@ sequence_fractions <- count_table %>%
   pivot_longer(-Genome, names_to = "sample", values_to = "value") %>%
   group_by(sample) %>%
   summarise(mags = sum(value)) %>%
-	left_join(sample_table, by = join_by(sample == sample))  %>%
-	select(sample,mags,metagenomic_bases,host_bases,bases_lost_fastp_percent) %>%
-	mutate(mags_bases = mags*146) %>%
-	mutate(lowqual_bases = ((metagenomic_bases+host_bases)/(1-bases_lost_fastp_percent))-(metagenomic_bases+host_bases)) %>%
-	mutate(unmapped_bases = metagenomic_bases - mags_bases) %>%
-	mutate(unmapped_bases = ifelse(unmapped_bases < 0, 0, unmapped_bases)) %>%
-	select(sample,mags_bases,unmapped_bases,host_bases,lowqual_bases)
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  select(sample, mags, metagenomic_bases, host_bases, bases_lost_fastp_percent) %>%
+  mutate(mags_bases = mags * 146) %>%
+  mutate(lowqual_bases = ((metagenomic_bases + host_bases) / (1 - bases_lost_fastp_percent)) - (metagenomic_bases + host_bases)) %>%
+  mutate(unmapped_bases = metagenomic_bases - mags_bases) %>%
+  mutate(unmapped_bases = ifelse(unmapped_bases < 0, 0, unmapped_bases)) %>%
+  select(sample, mags_bases, unmapped_bases, host_bases, lowqual_bases)
 
 mags_bases_mean <- sequence_fractions %>%
-	mutate(mags_bases = mags_bases / 1000000000) %>%
-	select(mags_bases) %>%
-	pull() %>%
-	mean()
+  mutate(mags_bases = mags_bases / 1000000000) %>%
+  select(mags_bases) %>%
+  pull() %>%
+  mean()
 
 #+ data_fraction_barplot, echo=FALSE, warning=FALSE, fig.height=5
 sequence_fractions %>%
-	pivot_longer(!sample, names_to = "fraction", values_to = "value") %>%
-	mutate(value = value / 1000000000) %>%
-	mutate(fraction = factor(fraction, levels = c("lowqual_bases","host_bases","unmapped_bases","mags_bases"))) %>%
-	ggplot(., aes(x = sample, y = value, fill=fraction)) +
-	    geom_bar(position="stack", stat = "identity") +
-			scale_fill_manual(values=c("#CCCCCC","#178a94","#ee8080","#d03161")) +
-	    geom_hline(yintercept = mags_bases_mean, linetype = "dashed", color = "black") +
-	    labs(x = "Samples", y = "Amount of data (GB)") +
-	    theme_classic() +
-	    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size=6),legend.position = "bottom")
+  pivot_longer(!sample, names_to = "fraction", values_to = "value") %>%
+  mutate(value = value / 1000000000) %>%
+  mutate(fraction = factor(fraction, levels = c("lowqual_bases", "host_bases", "unmapped_bases", "mags_bases"))) %>%
+  ggplot(., aes(x = sample, y = value, fill = fraction)) +
+  geom_bar(position = "stack", stat = "identity") +
+  scale_fill_manual(values = c("#CCCCCC", "#178a94", "#ee8080", "#d03161")) +
+  geom_hline(yintercept = mags_bases_mean, linetype = "dashed", color = "black") +
+  labs(x = "Samples", y = "Amount of data (GB)") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 6), legend.position = "bottom")
 
 #' \newpage
 #' ## 3.2 Estimated vs. mapped prokaryotic fraction
@@ -576,26 +588,26 @@ sequence_fractions %>%
 
 #+ singlem_calculations, echo=FALSE, warning=FALSE
 singlem_table <- sequence_fractions %>%
-	mutate(mags_proportion = round((mags_bases / (mags_bases + unmapped_bases))*100,2)) %>%
-	left_join(sample_table, by = join_by(sample == sample))  %>%
-	mutate(singlem_proportion = round(singlem_fraction*100,2)) %>%
-	select(sample,mags_proportion,singlem_proportion) %>%
-	mutate(mags_proportion = ifelse(singlem_proportion == 0, 0, mags_proportion)) %>% #convert zeros to NA
-	mutate(singlem_proportion = ifelse(singlem_proportion == 0, NA, singlem_proportion)) %>% #convert zeros to NA
-	mutate(singlem_proportion = ifelse(singlem_proportion < mags_proportion, NA, singlem_proportion)) %>% #if singlem is smaller, then NA, to simplify plot
-	mutate(singlem_proportion = ifelse(singlem_proportion > 100, 100, singlem_proportion)) #simplify
+  mutate(mags_proportion = round((mags_bases / (mags_bases + unmapped_bases)) * 100, 2)) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(singlem_proportion = round(singlem_fraction * 100, 2)) %>%
+  select(sample, mags_proportion, singlem_proportion) %>%
+  mutate(mags_proportion = ifelse(singlem_proportion == 0, 0, mags_proportion)) %>% # convert zeros to NA
+  mutate(singlem_proportion = ifelse(singlem_proportion == 0, NA, singlem_proportion)) %>% # convert zeros to NA
+  mutate(singlem_proportion = ifelse(singlem_proportion < mags_proportion, NA, singlem_proportion)) %>% # if singlem is smaller, then NA, to simplify plot
+  mutate(singlem_proportion = ifelse(singlem_proportion > 100, 100, singlem_proportion)) # simplify
 
 #+ singlem_plot, echo=FALSE, warning=FALSE, fig.height=6
 singlem_table %>%
-	pivot_longer(!sample, names_to = "proportion", values_to = "value") %>%
-	mutate(proportion = factor(proportion, levels = c("mags_proportion","singlem_proportion"))) %>%
-	ggplot(., aes(x = value, y = sample, color=proportion)) +
-			geom_line(aes(group = sample), color = "#f8a538") +
-			geom_point() +
-			scale_color_manual(values=c("#52e1e8","#876b53")) +
-			theme_classic() +
-			labs(y = "Samples", x = "Prokaryotic fraction (%)") +
-	    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size=6),legend.position = "right")
+  pivot_longer(!sample, names_to = "proportion", values_to = "value") %>%
+  mutate(proportion = factor(proportion, levels = c("mags_proportion", "singlem_proportion"))) %>%
+  ggplot(., aes(x = value, y = sample, color = proportion)) +
+  geom_line(aes(group = sample), color = "#f8a538") +
+  geom_point() +
+  scale_color_manual(values = c("#52e1e8", "#876b53")) +
+  theme_classic() +
+  labs(y = "Samples", x = "Prokaryotic fraction (%)") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 6), legend.position = "right")
 
 #' \newpage
 #' ## 3.3 Extra sequencing effort required
@@ -608,48 +620,48 @@ singlem_table %>%
 #' required to reach the desired amount of host or prokaryotic data. You can check the table for the actual
 #' value, but bear in mind that generating more than 20GB of data is economically prohibitive in most cases.
 #+ data_required, echo=FALSE, warning=FALSE
-mags_bases_aim=2
-host_bases_aim=5
+mags_bases_aim <- 2
+host_bases_aim <- 5
 
 sequence_fractions_required <- sequence_fractions %>%
-	mutate(mags_bases = round(mags_bases / 1000000000,2)) %>%
-	mutate(unmapped_bases = round(unmapped_bases / 1000000000,2)) %>%
-	mutate(host_bases = round(host_bases / 1000000000,2)) %>%
-	mutate(lowqual_bases = round(lowqual_bases / 1000000000,2)) %>%
-	mutate(total_bases = mags_bases+unmapped_bases+host_bases+lowqual_bases) %>%
-	mutate(mags_bases_fraction = mags_bases/total_bases) %>%
-	mutate(mags_bases_difference = mags_bases_aim - mags_bases) %>%
-	mutate(meta_required = round(mags_bases_difference / mags_bases_fraction,2)) %>%
-	mutate(meta_required = ifelse(meta_required < 0, 0, meta_required)) %>%
-	mutate(host_bases_fraction = host_bases/total_bases) %>%
-	mutate(host_bases_difference = host_bases_aim - host_bases) %>%
-	mutate(host_required = round(host_bases_difference / host_bases_fraction,2)) %>%
-	mutate(host_required = ifelse(host_required < 0, 0, host_required)) %>%
-	select(sample,mags_bases,unmapped_bases,host_bases,lowqual_bases,meta_required,host_required)
+  mutate(mags_bases = round(mags_bases / 1000000000, 2)) %>%
+  mutate(unmapped_bases = round(unmapped_bases / 1000000000, 2)) %>%
+  mutate(host_bases = round(host_bases / 1000000000, 2)) %>%
+  mutate(lowqual_bases = round(lowqual_bases / 1000000000, 2)) %>%
+  mutate(total_bases = mags_bases + unmapped_bases + host_bases + lowqual_bases) %>%
+  mutate(mags_bases_fraction = mags_bases / total_bases) %>%
+  mutate(mags_bases_difference = mags_bases_aim - mags_bases) %>%
+  mutate(meta_required = round(mags_bases_difference / mags_bases_fraction, 2)) %>%
+  mutate(meta_required = ifelse(meta_required < 0, 0, meta_required)) %>%
+  mutate(host_bases_fraction = host_bases / total_bases) %>%
+  mutate(host_bases_difference = host_bases_aim - host_bases) %>%
+  mutate(host_required = round(host_bases_difference / host_bases_fraction, 2)) %>%
+  mutate(host_required = ifelse(host_required < 0, 0, host_required)) %>%
+  select(sample, mags_bases, unmapped_bases, host_bases, lowqual_bases, meta_required, host_required)
 
 #+ data_required_barplot, echo=FALSE, warning=FALSE, fig.height=7
 sequence_fractions_required %>%
-	select(sample,meta_required,host_required) %>%
-	mutate(meta_required = ifelse(meta_required > 20, 21, meta_required)) %>%
-	mutate(host_required = ifelse(host_required > 20, 21, host_required)) %>%
-	pivot_longer(!sample, names_to = "requirement", values_to = "value") %>%
-	mutate(requirement = factor(requirement, levels = c("host_required","meta_required"))) %>%
-	ggplot(., aes(x = value, y = sample, fill=requirement, group=requirement)) +
-	    geom_bar(position="stack", stat = "identity") +
-			scale_fill_manual(values=c("#178a94","#d03161")) +
-			facet_wrap(~requirement, scales="free_x") +
-			labs(x = "Amount of data (GB)", y = "Samples") +
-			geom_vline(xintercept = 20, linetype = "dashed", color = "black") +
-	    theme_classic() +
-	    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size=6),legend.position = "bottom")
+  select(sample, meta_required, host_required) %>%
+  mutate(meta_required = ifelse(meta_required > 20, 21, meta_required)) %>%
+  mutate(host_required = ifelse(host_required > 20, 21, host_required)) %>%
+  pivot_longer(!sample, names_to = "requirement", values_to = "value") %>%
+  mutate(requirement = factor(requirement, levels = c("host_required", "meta_required"))) %>%
+  ggplot(., aes(x = value, y = sample, fill = requirement, group = requirement)) +
+  geom_bar(position = "stack", stat = "identity") +
+  scale_fill_manual(values = c("#178a94", "#d03161")) +
+  facet_wrap(~requirement, scales = "free_x") +
+  labs(x = "Amount of data (GB)", y = "Samples") +
+  geom_vline(xintercept = 20, linetype = "dashed", color = "black") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 6), legend.position = "bottom")
 
 
 #+ data_required_table, echo=FALSE, warning=FALSE
-sequence_fractions_required	%>%
-	kable()
+sequence_fractions_required %>%
+  kable()
 
 #+ print_data_required_table, echo=FALSE, warning=FALSE
-write.table(sequence_fractions_required,"sequencing_stats.tsv",sep="\t",quote=FALSE,col.names=TRUE,row.names=FALSE)
+write.table(sequence_fractions_required, "sequencing_stats.tsv", sep = "\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
 
 #' \newpage
 #' # 4. Count data
@@ -662,8 +674,8 @@ write.table(sequence_fractions_required,"sequencing_stats.tsv",sep="\t",quote=FA
 #' this filtering can also introduce distorsion, by introducing false positives.
 
 #+ echo=FALSE, warning=FALSE
-#Apply coverage filtering filtering
-min_coverage=0.3
+# Apply coverage filtering filtering
+min_coverage <- 0.3
 count_table_cov <- coverage_table %>%
   mutate(across(everything(), ~ ifelse(. > min_coverage, 1, 0))) %>%
   map2_df(., count_table, ~ .x * .y) %>%
@@ -678,13 +690,13 @@ rownames(count_table_cov) <- rownames(coverage_table)
 #'
 
 #+ echo=FALSE, warning=FALSE
-#Transform to bacterial genome counts
-#How many reads are needed to cover each genome
-#143 nt is the average read-length after quality filtering in EHI data
-genome_read_sizes <- mags_table[rownames(count_table_cov),] %>%
-    select(mag_size) %>%
-    mutate(mag_size = mag_size / 143) %>%
-    pull()
+# Transform to bacterial genome counts
+# How many reads are needed to cover each genome
+# 143 nt is the average read-length after quality filtering in EHI data
+genome_read_sizes <- mags_table[rownames(count_table_cov), ] %>%
+  select(mag_size) %>%
+  mutate(mag_size = mag_size / 143) %>%
+  pull()
 count_table_cov_size <- sweep(count_table_cov, 1, genome_read_sizes, "/")
 
 #' \newpage
@@ -692,41 +704,43 @@ count_table_cov_size <- sweep(count_table_cov, 1, genome_read_sizes, "/")
 #' Once low-coverage genome counts have been filtered out, and the read counts have been normalised into genome
 #' counts, we can visualise the relative MAG abundances per sample. Note that the count scale is log-transformed.
 #+ cov_size_heatmap, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=6
-vertical_tree <- force.ultrametric(tree,method="extend") %>%
-		ggtree(., size = 0.3)
+vertical_tree <- force.ultrametric(tree, method = "extend") %>%
+  ggtree(., size = 0.3)
 
-#Add phylum colors
-vertical_tree <- gheatmap(vertical_tree, heatmap, offset=0, width=0.1, colnames=FALSE) +
-	scale_fill_manual(values=colors_alphabetic)
+# Add phylum colors
+vertical_tree <- gheatmap(vertical_tree, heatmap, offset = 0, width = 0.1, colnames = FALSE) +
+  scale_fill_manual(values = colors_alphabetic)
 
-#Reset fill scale
+# Reset fill scale
 vertical_tree <- vertical_tree + new_scale_fill()
 
-#Add counts
-vertical_tree <- gheatmap(vertical_tree, log10(count_table_cov_size), offset=0.04, width=3.5, colnames=TRUE, colnames_angle=90, font.size=2, colnames_position="top", colnames_offset_y = 9) +
-	vexpand(.08) +
-	coord_cartesian(clip = "off") +
-	scale_fill_gradient(low = "white", high = "steelblue", na.value="white")
+# Add counts
+vertical_tree <- gheatmap(vertical_tree, log10(count_table_cov_size), offset = 0.04, width = 3.5, colnames = TRUE, colnames_angle = 90, font.size = 2, colnames_position = "top", colnames_offset_y = 9) +
+  vexpand(.08) +
+  coord_cartesian(clip = "off") +
+  scale_fill_gradient(low = "white", high = "steelblue", na.value = "white")
 
-#PLot tree
+# PLot tree
 vertical_tree +
-	theme(legend.position='none')
+  theme(legend.position = "none")
 
-#Add count scale
+# Add count scale
 #+ count_legends, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=1.5
 countscale <- seq(log(max(count_table_cov_size)), 0, length.out = 5)
 
-count_legend <- data.frame(value = countscale, x = c(round(exp(countscale[1]),2),round(exp(countscale[2]),2),round(exp(countscale[3]),2),round(exp(countscale[4]),2),"0")) %>%
-	mutate(x = factor(x, levels = x)) %>%
-	ggplot(., aes(x = x, y = 0.2)) +
-  geom_tile(aes(fill = value, y = 0.2), color="#CCCCCC") +
-	scale_fill_gradient(low = "white", high = "steelblue", na.value="white") +
+count_legend <- data.frame(value = countscale, x = c(round(exp(countscale[1]), 2), round(exp(countscale[2]), 2), round(exp(countscale[3]), 2), round(exp(countscale[4]), 2), "0")) %>%
+  mutate(x = factor(x, levels = x)) %>%
+  ggplot(., aes(x = x, y = 0.2)) +
+  geom_tile(aes(fill = value, y = 0.2), color = "#CCCCCC") +
+  scale_fill_gradient(low = "white", high = "steelblue", na.value = "white") +
   theme_void() +
-  theme(legend.position='none',
-			axis.text.x = element_text(angle = 90, vjust = 1, hjust=1, size=8))
+  theme(
+    legend.position = "none",
+    axis.text.x = element_text(angle = 90, vjust = 1, hjust = 1, size = 8)
+  )
 
-#Arrange both legends
-grid.arrange(grobs = list(phyla_legend,count_legend), layout_matrix = rbind(c(1,1,2),c(1,1,3)))
+# Arrange both legends
+grid.arrange(grobs = list(phyla_legend, count_legend), layout_matrix = rbind(c(1, 1, 2), c(1, 1, 3)))
 
 #' \newpage
 #' # 5. Taxonomic composition
@@ -740,10 +754,10 @@ grid.arrange(grobs = list(phyla_legend,count_legend), layout_matrix = rbind(c(1,
 #+ echo=FALSE, warning=FALSE
 count_table_cov_size_pivot <- count_table_cov_size %>%
   rownames_to_column("Genome") %>%
-  mutate_at(vars(-Genome),~./sum(.)) %>% #apply TSS nornalisation
-  pivot_longer(-Genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
-  left_join(., mags_table, by = join_by(Genome == genome)) %>% #append taxonomy
-  mutate(phylum = fct_relevel(phylum, rev(ehi_phylum_colors$phylum))) #sort phyla by taxonomy
+  mutate_at(vars(-Genome), ~ . / sum(.)) %>% # apply TSS nornalisation
+  pivot_longer(-Genome, names_to = "sample", values_to = "count") %>% # reduce to minimum number of columns
+  left_join(., mags_table, by = join_by(Genome == genome)) %>% # append taxonomy
+  mutate(phylum = fct_relevel(phylum, rev(ehi_phylum_colors$phylum))) # sort phyla by taxonomy
 
 #+ echo=FALSE, warning=FALSE
 # Retrieve taxonomy colors to use standardised EHI colors
@@ -752,24 +766,26 @@ phylum_colors <- ehi_phylum_colors %>%
   select(colors) %>%
   pull() %>%
   rev()
-phylum_colors <- c(phylum_colors,"#cccccc") #REMOVE! ONLY FOR ARCHAEANS
+phylum_colors <- c(phylum_colors, "#cccccc") # REMOVE! ONLY FOR ARCHAEANS
 
 #+ barplot, echo=FALSE, warning=FALSE, fig.height=5.5
 # Plot stacked barplot
-ggplot(count_table_cov_size_pivot, aes(x=sample,y=count,fill=phylum, group=phylum))+ #grouping enables keeping the same sorting of taxonomic units
-    geom_bar(stat="identity", colour="white", linewidth=0.1)+ #plot stacked bars with white borders
-    scale_fill_manual(values=phylum_colors) +
-    labs(y = "Relative abundance") +
-    guides(fill = guide_legend(ncol = 3)) +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-					axis.title.x = element_blank(),
-          panel.background = element_blank(),
-          panel.border = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          axis.line = element_line(linewidth = 0.5, linetype = "solid", colour = "black"),
-          legend.position="none",
-          legend.title=element_blank())
+ggplot(count_table_cov_size_pivot, aes(x = sample, y = count, fill = phylum, group = phylum)) + # grouping enables keeping the same sorting of taxonomic units
+  geom_bar(stat = "identity", colour = "white", linewidth = 0.1) + # plot stacked bars with white borders
+  scale_fill_manual(values = phylum_colors) +
+  labs(y = "Relative abundance") +
+  guides(fill = guide_legend(ncol = 3)) +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.title.x = element_blank(),
+    panel.background = element_blank(),
+    panel.border = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(linewidth = 0.5, linetype = "solid", colour = "black"),
+    legend.position = "none",
+    legend.title = element_blank()
+  )
 
 #+ barplot_legend, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=1.5
 phyla_legend
@@ -792,502 +808,543 @@ phyla_legend
 
 #+ alpha_divs, echo=FALSE, warning=FALSE, comments="", message=FALSE
 
-#Get list of present MAGs
+# Get list of present MAGs
 present_MAGs <- count_table_cov_size %>%
-		filter(rowSums(.[, -1]) != 0) %>%
-		rownames()
+  filter(rowSums(.[, -1]) != 0) %>%
+  rownames()
 
-#Remove samples with all zeros (no data after filtering)
+# Remove samples with all zeros (no data after filtering)
 count_table_cov_size <- count_table_cov_size %>%
-  select_if(~!all(. == 0))
+  select_if(~ !all(. == 0))
 
-#Align KEGG annotations with present MAGs and remove all-zero and all-one traits
-if(func == "yes"){
-	present_MAGs <- present_MAGs[present_MAGs %in% rownames(kegg_table)]
-	kegg_table_filt <- kegg_table[present_MAGs,] %>%
-			select_if(~!all(. == 0)) %>%  #remove all-zero modules
-			select_if(~!all(. == 1)) #remove all-one modules
+# Align KEGG annotations with present MAGs and remove all-zero and all-one traits
+if (func == "yes") {
+  present_MAGs <- present_MAGs[present_MAGs %in% rownames(kegg_table)]
+  kegg_table_filt <- kegg_table[present_MAGs, ] %>%
+    select_if(~ !all(. == 0)) %>% # remove all-zero modules
+    select_if(~ !all(. == 1)) # remove all-one modules
 }
 
-#Compute alpha Hill numbers
-q0n <- hilldiv(count_table_cov_size,q=0) %>% c()
-q1n <- hilldiv(count_table_cov_size,q=1) %>% c()
-q1p <- hilldiv(count_table_cov_size,q=1,tree=tree) %>% c()
+# Compute alpha Hill numbers
+q0n <- hilldiv(count_table_cov_size, q = 0) %>% c()
+q1n <- hilldiv(count_table_cov_size, q = 1) %>% c()
+q1p <- hilldiv(count_table_cov_size, q = 1, tree = tree) %>% c()
 
-#If functional data is present
-if(func == "yes"){
-	dist <- traits2dist(kegg_table_filt, method="gower")
-	#Filter count table to only contain present MAGs after KEGG filtering
-	count_table_cov_size_filt <- count_table_cov_size[present_MAGs,]
-	#print(cbind(rownames(count_table_cov_size),rownames(dist),colnames(dist)))
-	q1f <- hilldiv(count_table_cov_size_filt,q=1,dist=dist) %>% c()
+# If functional data is present
+if (func == "yes") {
+  dist <- traits2dist(kegg_table_filt, method = "gower")
+  # Filter count table to only contain present MAGs after KEGG filtering
+  count_table_cov_size_filt <- count_table_cov_size[present_MAGs, ]
+  # print(cbind(rownames(count_table_cov_size),rownames(dist),colnames(dist)))
+  q1f <- hilldiv(count_table_cov_size_filt, q = 1, dist = dist) %>% c()
 }
 
 #+ alpha_divs_merge, echo=FALSE, warning=FALSE, comments="", message=FALSE
 # Merge all alpha diversities
 
-if(func == "yes"){
-	#With functional data
-	alpha_div <- cbind(sample=colnames(count_table_cov_size),richness=q0n,neutral=round(q1n,3),phylo=round(q1p,3),func=round(q1f,3)) %>%
-		as.data.frame()
-	columns <- c("richness","neutral","phylo","func","mapped","total")
+if (func == "yes") {
+  # With functional data
+  alpha_div <- cbind(sample = colnames(count_table_cov_size), richness = q0n, neutral = round(q1n, 3), phylo = round(q1p, 3), func = round(q1f, 3)) %>%
+    as.data.frame()
+  columns <- c("richness", "neutral", "phylo", "func", "mapped", "total")
 
-	alpha_div <- alpha_div %>%
-		left_join(sequence_fractions, by = join_by(sample == sample)) %>% #add sequencing depth information
-	  mutate(mapped=round(mags_bases/1000000000,3)) %>% #modify depth to million reads
-		mutate(total=round((mags_bases+unmapped_bases+host_bases+lowqual_bases)/1000000000,3)) %>%
-		select(sample,richness,neutral,phylo,func,mapped,total) %>%
-		mutate(across(-1, as.numeric))
+  alpha_div <- alpha_div %>%
+    left_join(sequence_fractions, by = join_by(sample == sample)) %>% # add sequencing depth information
+    mutate(mapped = round(mags_bases / 1000000000, 3)) %>% # modify depth to million reads
+    mutate(total = round((mags_bases + unmapped_bases + host_bases + lowqual_bases) / 1000000000, 3)) %>%
+    select(sample, richness, neutral, phylo, func, mapped, total) %>%
+    mutate(across(-1, as.numeric))
+} else {
+  # Without functional data
+  alpha_div <- cbind(sample = colnames(count_table_cov_size), richness = q0n, neutral = round(q1n, 3), phylo = round(q1p, 3)) %>%
+    as.data.frame()
+  columns <- c("richness", "neutral", "phylo", "mapped", "total")
 
-}else{
-	#Without functional data
-	alpha_div <- cbind(sample=colnames(count_table_cov_size),richness=q0n,neutral=round(q1n,3),phylo=round(q1p,3)) %>%
-		as.data.frame()
-	columns <- c("richness","neutral","phylo","mapped","total")
-
-	alpha_div <- alpha_div %>%
-		left_join(sequence_fractions, by = join_by(sample == sample)) %>% #add sequencing depth information
-	  mutate(mapped=round(mags_bases/1000000000,3)) %>% #modify depth to million reads
-		mutate(total=round((mags_bases+unmapped_bases+host_bases+lowqual_bases)/1000000000,3)) %>%
-		select(sample,richness,neutral,phylo,mapped,total) %>%
-		mutate(across(-1, as.numeric))
+  alpha_div <- alpha_div %>%
+    left_join(sequence_fractions, by = join_by(sample == sample)) %>% # add sequencing depth information
+    mutate(mapped = round(mags_bases / 1000000000, 3)) %>% # modify depth to million reads
+    mutate(total = round((mags_bases + unmapped_bases + host_bases + lowqual_bases) / 1000000000, 3)) %>%
+    select(sample, richness, neutral, phylo, mapped, total) %>%
+    mutate(across(-1, as.numeric))
 }
 
 #+ alpha_divs_plot, echo=FALSE, warning=FALSE, fig.height=6
 alpha_div %>%
-		pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-		mutate(data = factor(data, levels = columns))	%>%
-		ggplot(aes(x=value, y=sample)) +
-			geom_bar(stat='identity', fill="#6c9ebc") +
-			facet_wrap(~data,  scales="free_x", ncol=6) +
-			theme_classic() +
-			theme(
-				strip.background = element_blank(),
-				panel.grid.minor.x = element_line( size=.1, color="grey" ),
-				axis.title.x = element_blank(),
-				axis.title.y = element_blank(),
-				axis.text.x = element_text(angle = 45, hjust = 1)
-			)
+  pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+  mutate(data = factor(data, levels = columns)) %>%
+  ggplot(aes(x = value, y = sample)) +
+  geom_bar(stat = "identity", fill = "#6c9ebc") +
+  facet_wrap(~data, scales = "free_x", ncol = 6) +
+  theme_classic() +
+  theme(
+    strip.background = element_blank(),
+    panel.grid.minor.x = element_line(size = .1, color = "grey"),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
 
 #+ alpha_divs_table, echo=FALSE, warning=FALSE
-kable(alpha_div, caption="Mapped and Total amount of data are shown in GB (gigabases)")
+kable(alpha_div, caption = "Mapped and Total amount of data are shown in GB (gigabases)")
 
 #' \newpage
 #+ alpha_colors, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
-alpha_colors <- c("#e5bd5b","#6b7398","#76b183","#d57d2c","#2a2d26","#f9d4cc","#3c634e","#ea68c3")
+alpha_colors <- c("#e5bd5b", "#6b7398", "#76b183", "#d57d2c", "#2a2d26", "#f9d4cc", "#3c634e", "#ea68c3")
 
 
 #+ alpha_divs_comp_plot1, echo=FALSE, warning=FALSE
-group_n <- alpha_div %>% select(sample,neutral) %>%
-		left_join(sample_table, by = join_by(sample == sample)) %>%
-		select(species) %>% pull() %>% unique() %>% length()
+group_n <- alpha_div %>%
+  select(sample, neutral) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  select(species) %>%
+  pull() %>%
+  unique() %>%
+  length()
 
 #' `r if(group_n>1 && group_n<=8){paste0("\nAlpha diversity variation accross species.\n")}`
 
 #+ alpha_divs_comp_plot1_neutral, echo=FALSE, warning=FALSE
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,neutral) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "species", y = "value", color = "species", fill="species") +
-					scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-					scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-					stat_compare_means() +
-					theme_classic() +
-					labs(y = "Neutral Hill numbers") +
-					theme(
-						legend.position = "top",
-						legend.box = "horizontal",
-						axis.title.x = element_blank(),
-						axis.text.x = element_blank()) +
-					guides(color=guide_legend(title="Species"), fill="none")
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, neutral) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "species", y = "value", color = "species", fill = "species") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Neutral Hill numbers") +
+    theme(
+      legend.position = "top",
+      legend.box = "horizontal",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Species"), fill = "none")
 }
 
 #+ alpha_divs_comp_plot1_phylo, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,phylo) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "species", y = "value", color = "species", fill="species") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Phylogenetic Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, phylo) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "species", y = "value", color = "species", fill = "species") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Phylogenetic Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 #+ alpha_divs_comp_plot1_func, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8 && func == "yes"){
-	alpha_div %>%
-			select(sample,func) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "species", y = "value", color = "species", fill="species") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Functional Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+if (group_n > 1 && group_n <= 8 && func == "yes") {
+  alpha_div %>%
+    select(sample, func) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "species", y = "value", color = "species", fill = "species") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Functional Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 
 #' \newpage
 #+ alpha_divs_comp_plot2, echo=FALSE, warning=FALSE
-group_n <- alpha_div %>% select(sample,neutral) %>%
-		left_join(sample_table, by = join_by(sample == sample)) %>%
-		mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-		select(location) %>% pull() %>% unique() %>% length()
+group_n <- alpha_div %>%
+  select(sample, neutral) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+  select(location) %>%
+  pull() %>%
+  unique() %>%
+  length()
 
 #' `r if(group_n>1 && group_n<=8){paste0("\nAlpha diversity variation accross locations.\n")}`
 
 #+ alpha_divs_comp_plot2_neutral, echo=FALSE, warning=FALSE, fig.height=3.2
 
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,neutral) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
-					scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-					scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-					stat_compare_means() +
-					theme_classic() +
-					labs(y = "Neutral Hill numbers") +
-					theme(
-						legend.position = "top",
-						legend.box = "horizontal",
-						axis.title.x = element_blank(),
-						axis.text.x = element_blank()) +
-					guides(color=guide_legend(title="Location"), fill="none")
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, neutral) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "location", y = "value", color = "location", fill = "location") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Neutral Hill numbers") +
+    theme(
+      legend.position = "top",
+      legend.box = "horizontal",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Location"), fill = "none")
 }
 #+ alpha_divs_comp_plot2_phylo, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,phylo) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Phylogenetic Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, phylo) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "location", y = "value", color = "location", fill = "location") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Phylogenetic Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 #+ alpha_divs_comp_plot2_func, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8 && func == "yes"){
-	alpha_div %>%
-			select(sample,func) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "location", y = "value", color = "location", fill="location") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Functional Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+if (group_n > 1 && group_n <= 8 && func == "yes") {
+  alpha_div %>%
+    select(sample, func) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "location", y = "value", color = "location", fill = "location") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Functional Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 
 #' \newpage
 #+ alpha_divs_comp_plot3, echo=FALSE, warning=FALSE
-group_n <- alpha_div %>% select(sample,neutral) %>%
-		left_join(sample_table, by = join_by(sample == sample)) %>%
-		select(region) %>% pull() %>% unique() %>% length()
+group_n <- alpha_div %>%
+  select(sample, neutral) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  select(region) %>%
+  pull() %>%
+  unique() %>%
+  length()
 
 #' `r if(group_n>1 && group_n<=8){paste0("\nAlpha diversity variation accross regions.\n")}`
 
 #+ alpha_divs_comp_plot3_neutral, echo=FALSE, warning=FALSE, fig.height=3.2
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,neutral) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "region", y = "value", color = "region", fill="region") +
-					scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-					scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-					stat_compare_means() +
-					theme_classic() +
-					labs(y = "Neutral Hill numbers") +
-					theme(
-						legend.position = "top",
-						legend.box = "horizontal",
-						axis.title.x = element_blank(),
-						axis.text.x = element_blank()) +
-					guides(color=guide_legend(title="Region"), fill="none")
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, neutral) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "region", y = "value", color = "region", fill = "region") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Neutral Hill numbers") +
+    theme(
+      legend.position = "top",
+      legend.box = "horizontal",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Region"), fill = "none")
 }
 #+ alpha_divs_comp_plot3_phylo, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,phylo) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "region", y = "value", color = "region", fill="region") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Phylogenetic Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, phylo) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "region", y = "value", color = "region", fill = "region") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Phylogenetic Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 #+ alpha_divs_comp_plot3_func, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8 && func == "yes"){
-	alpha_div %>%
-			select(sample,func) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "region", y = "value", color = "region", fill="region") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Functional Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+if (group_n > 1 && group_n <= 8 && func == "yes") {
+  alpha_div %>%
+    select(sample, func) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "region", y = "value", color = "region", fill = "region") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Functional Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 
 #' \newpage
 #+ alpha_divs_comp_plot4, echo=FALSE, warning=FALSE
-group_n <- alpha_div %>% select(sample,neutral) %>%
-		left_join(sample_table, by = join_by(sample == sample)) %>%
-		select(country) %>% pull() %>% unique() %>% length()
+group_n <- alpha_div %>%
+  select(sample, neutral) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  select(country) %>%
+  pull() %>%
+  unique() %>%
+  length()
 
 #' `r if(group_n>1 && group_n<=8){paste0("\nAlpha diversity variation accross countries.\n")}`
 
 #+ alpha_divs_comp_plot4_neutral, echo=FALSE, warning=FALSE, fig.height=3.2
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,neutral) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "country", y = "value", color = "country", fill="country") +
-					scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-					scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-					stat_compare_means() +
-					theme_classic() +
-					labs(y = "Neutral Hill numbers") +
-					theme(
-						legend.position = "top",
-						legend.box = "horizontal",
-						axis.title.x = element_blank(),
-						axis.text.x = element_blank()) +
-					guides(color=guide_legend(title="Country"), fill="none")
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, neutral) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "country", y = "value", color = "country", fill = "country") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Neutral Hill numbers") +
+    theme(
+      legend.position = "top",
+      legend.box = "horizontal",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Country"), fill = "none")
 }
 #+ alpha_divs_comp_plot4_phylo, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,phylo) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "country", y = "value", color = "country", fill="country") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Phylogenetic Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, phylo) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "country", y = "value", color = "country", fill = "country") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Phylogenetic Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 #+ alpha_divs_comp_plot4_func, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8 && func == "yes"){
-	alpha_div %>%
-			select(sample,func) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "country", y = "value", color = "country", fill="country") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Functional Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank())
+if (group_n > 1 && group_n <= 8 && func == "yes") {
+  alpha_div %>%
+    select(sample, func) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "country", y = "value", color = "country", fill = "country") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Functional Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    )
 }
 
 #' \newpage
 #+ alpha_divs_comp_plot5, echo=FALSE, warning=FALSE
-group_n <- alpha_div %>% select(sample,neutral) %>%
-		left_join(sample_table, by = join_by(sample == sample)) %>%
-		select(sex) %>% pull() %>% unique() %>% length()
+group_n <- alpha_div %>%
+  select(sample, neutral) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  select(sex) %>%
+  pull() %>%
+  unique() %>%
+  length()
 
 #' `r if(group_n>1 && group_n<=8){paste0("\nAlpha diversity variation between sexes.\n")}`
 
 #+ alpha_divs_comp_plot5_neutral, echo=FALSE, warning=FALSE, fig.height=3.2
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,neutral) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "sex", y = "value", color = "sex", fill="sex") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Neutral Hill numbers") +
-			theme(
-				legend.position="top", legend.box="horizontal",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank()) +
-			guides(color=guide_legend(title="Sex"), fill="none")
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, neutral) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "sex", y = "value", color = "sex", fill = "sex") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Neutral Hill numbers") +
+    theme(
+      legend.position = "top", legend.box = "horizontal",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Sex"), fill = "none")
 }
 
 #+ alpha_divs_comp_plot5_phylo, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,phylo) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "sex", y = "value", color = "sex", fill="sex") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Phylogenetic Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank()) +
-			guides(color=guide_legend(title="Sex"), fill="none")
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, phylo) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "sex", y = "value", color = "sex", fill = "sex") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Phylogenetic Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Sex"), fill = "none")
 }
 #+ alpha_divs_comp_plot5_func, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8 && func == "yes"){
-	alpha_div %>%
-			select(sample,func) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "sex", y = "value", color = "sex", fill="sex") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Functional Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank()) +
-			guides(color=guide_legend(title="Sex"), fill="none")
+if (group_n > 1 && group_n <= 8 && func == "yes") {
+  alpha_div %>%
+    select(sample, func) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "sex", y = "value", color = "sex", fill = "sex") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Functional Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Sex"), fill = "none")
 }
 
 #' \newpage
 #+ alpha_divs_comp_plot6, echo=FALSE, warning=FALSE
-group_n <- alpha_div %>% select(sample,neutral) %>%
-		left_join(sample_table, by = join_by(sample == sample)) %>%
-		select(sample_type) %>% pull() %>% unique() %>% length()
+group_n <- alpha_div %>%
+  select(sample, neutral) %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  select(sample_type) %>%
+  pull() %>%
+  unique() %>%
+  length()
 
 #' `r if(group_n>1 && group_n<=8){paste0("\nAlpha diversity variation across sample types.\n")}`
 
 #+ alpha_divs_comp_plot6_neutral, echo=FALSE, warning=FALSE, fig.height=3.2
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,neutral) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "sample_type", y = "value", color = "sample_type", fill="sample_type") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Neutral Hill numbers") +
-			theme(
-				legend.position="top", legend.box="horizontal",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank()) +
-			guides(color=guide_legend(title="Sample type"), fill="none")
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, neutral) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "sample_type", y = "value", color = "sample_type", fill = "sample_type") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Neutral Hill numbers") +
+    theme(
+      legend.position = "top", legend.box = "horizontal",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Sample type"), fill = "none")
 }
 #+ alpha_divs_comp_plot6_phylo, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8){
-	alpha_div %>%
-			select(sample,phylo) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "sample_type", y = "value", color = "sample_type", fill="sample_type") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Phylogenetic Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank()) +
-			guides(color=guide_legend(title="Sex"), fill="none")
+if (group_n > 1 && group_n <= 8) {
+  alpha_div %>%
+    select(sample, phylo) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "sample_type", y = "value", color = "sample_type", fill = "sample_type") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Phylogenetic Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Sex"), fill = "none")
 }
 #+ alpha_divs_comp_plot6_func, echo=FALSE, warning=FALSE, fig.height=2.5
-if(group_n>1 && group_n<=8 && func == "yes"){
-	alpha_div %>%
-			select(sample,func) %>%
-			pivot_longer(-sample, names_to = "data", values_to = "value") %>%
-			mutate(data = factor(data, levels = columns))	%>%
-			left_join(sample_table, by = join_by(sample == sample)) %>%
-			mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-			ggboxplot(., x = "sample_type", y = "value", color = "sample_type", fill="sample_type") +
-			scale_color_manual(values=alpha_colors[c(1:group_n)]) +
-			scale_fill_manual(values=paste0(alpha_colors[c(1:group_n)],"50")) +
-			stat_compare_means() +
-			theme_classic() +
-			labs(y = "Functional Hill numbers") +
-			theme(
-				legend.position = "none",
-				axis.title.x = element_blank(),
-				axis.text.x = element_blank()) +
-			guides(color=guide_legend(title="Sex"), fill="none")
+if (group_n > 1 && group_n <= 8 && func == "yes") {
+  alpha_div %>%
+    select(sample, func) %>%
+    pivot_longer(-sample, names_to = "data", values_to = "value") %>%
+    mutate(data = factor(data, levels = columns)) %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    ggboxplot(., x = "sample_type", y = "value", color = "sample_type", fill = "sample_type") +
+    scale_color_manual(values = alpha_colors[c(1:group_n)]) +
+    scale_fill_manual(values = paste0(alpha_colors[c(1:group_n)], "50")) +
+    stat_compare_means() +
+    theme_classic() +
+    labs(y = "Functional Hill numbers") +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.text.x = element_blank()
+    ) +
+    guides(color = guide_legend(title = "Sex"), fill = "none")
 }
 
 #' \newpage
@@ -1301,13 +1358,13 @@ if(group_n>1 && group_n<=8 && func == "yes"){
 #' system. Hence, the results shown here must be interpreted cautiously.
 
 #+ alpha_depth_neutral, echo=FALSE, warning=FALSE, fig.height=5
-ggplot(alpha_div, aes(x=mapped,y=neutral,size=total,label=sample)) +
-  		geom_smooth(method='lm', formula= y~x, color='#e08dde', fill='#e08dde') +
-      geom_point(alpha=0.5, color="#6c9ebc") +
-      geom_label_repel(max.overlaps = 100, cex=0.7) +
-      labs(x = "GBs mapped to MAGs", y = "Neutral diversity (effective number of MAGs)") +
-      theme_classic() +
-			theme(legend.position="none")
+ggplot(alpha_div, aes(x = mapped, y = neutral, size = total, label = sample)) +
+  geom_smooth(method = "lm", formula = y ~ x, color = "#e08dde", fill = "#e08dde") +
+  geom_point(alpha = 0.5, color = "#6c9ebc") +
+  geom_label_repel(max.overlaps = 100, cex = 0.7) +
+  labs(x = "GBs mapped to MAGs", y = "Neutral diversity (effective number of MAGs)") +
+  theme_classic() +
+  theme(legend.position = "none")
 
 
 #' \newpage
@@ -1323,153 +1380,153 @@ ggplot(alpha_div, aes(x=mapped,y=neutral,size=total,label=sample)) +
 #'
 
 #+ beta_colors, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
-beta_colors <- c("#e5bd5b","#6b7398","#76b183","#d57d2c","#2a2d26","#f9d4cc","#3c634e","#ea68c3")
+beta_colors <- c("#e5bd5b", "#6b7398", "#76b183", "#d57d2c", "#2a2d26", "#f9d4cc", "#3c634e", "#ea68c3")
 
 #' ### 6.3.1 Neutral beta diversity
 #' The PERMANOVA analysis based on neutral beta diversities indicates whether microbiomes vary between metadata variables.
 
 #+ beta_neutral, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
-beta_q1n <- hillpair(count_table_cov_size,q=1) %>%
-				select(first,second,C) %>% #based on dissimilarity metric C
-				as.data.frame() %>%
-				pivot_wider(names_from = first, values_from = C) %>%
-				column_to_rownames(var = "second") %>%
-				as.matrix() %>%
-				as.dist()
+beta_q1n <- hillpair(count_table_cov_size, q = 1) %>%
+  select(first, second, C) %>% # based on dissimilarity metric C
+  as.data.frame() %>%
+  pivot_wider(names_from = first, values_from = C) %>%
+  column_to_rownames(var = "second") %>%
+  as.matrix() %>%
+  as.dist()
 
 #+ beta_neutral_permanova_input, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
 sample_table_adonis <- sample_table %>%
-	filter(sample %in% labels(beta_q1n)) %>%
-	arrange(sample) %>%
-	mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-	select(sample,location,region,country,species,sex,sample_type) %>%
-	select_if(~ length(unique(.)) > 1) %>% #remove columns with all-identical values
-	column_to_rownames(var = "sample") %>%
-	as.data.frame()
+  filter(sample %in% labels(beta_q1n)) %>%
+  arrange(sample) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+  select(sample, location, region, country, species, sex, sample_type) %>%
+  select_if(~ length(unique(.)) > 1) %>% # remove columns with all-identical values
+  column_to_rownames(var = "sample") %>%
+  as.data.frame()
 
 #+ beta_neutral_permanova, echo=FALSE, warning=FALSE, comments="", message=FALSE
-if(ncol(sample_table_adonis)>1){
-	adonis2(formula=beta_q1n ~ ., data=sample_table_adonis[labels(beta_q1n),], permutations=999) %>%
-			as.matrix() %>%
-			kable()
-}else if(ncol(sample_table_adonis)==1){ # fix in case of a single variable
-	adonis_matrix<-adonis2(formula=beta_q1n ~ sample_table_adonis[labels(beta_q1n),], permutations=999) %>%
-			as.matrix()
-	rownames(adonis_matrix)[1] <- colnames(sample_table_adonis)
-	adonis_matrix %>%
-			kable()
-}else{
-	print("PERMANOVA was not conducted because of lack of metadata variability")
+if (ncol(sample_table_adonis) > 1) {
+  adonis2(formula = beta_q1n ~ ., data = sample_table_adonis[labels(beta_q1n), ], permutations = 999) %>%
+    as.matrix() %>%
+    kable()
+} else if (ncol(sample_table_adonis) == 1) { # fix in case of a single variable
+  adonis_matrix <- adonis2(formula = beta_q1n ~ sample_table_adonis[labels(beta_q1n), ], permutations = 999) %>%
+    as.matrix()
+  rownames(adonis_matrix)[1] <- colnames(sample_table_adonis)
+  adonis_matrix %>%
+    kable()
+} else {
+  print("PERMANOVA was not conducted because of lack of metadata variability")
 }
 
 #+ beta_neutral_nmds, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
 beta_q1n_nmds <- beta_q1n %>%
-				metaMDS(.,trymax = 500, k=2, verbosity=FALSE) %>%
-				scores() %>%
-				as_tibble(., rownames = "sample") %>%
-				left_join(sample_table, by = join_by(sample == sample)) %>%
-				mutate(location=paste0(round(longitude,2),"_",round(latitude,2)))
+  metaMDS(., trymax = 500, k = 2, verbosity = FALSE) %>%
+  scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2)))
 
 #+ beta_neutral_plot1, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1n_nmds$species))>1 && length(unique(beta_q1n_nmds$species))<=8){
-group_n <- length(unique(beta_q1n_nmds$species))
-beta_q1n_nmds %>%
-			group_by(species) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Species"))
+if (length(unique(beta_q1n_nmds$species)) > 1 && length(unique(beta_q1n_nmds$species)) <= 8) {
+  group_n <- length(unique(beta_q1n_nmds$species))
+  beta_q1n_nmds %>%
+    group_by(species) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = species)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Species"))
 }
 
 #+ beta_neutral_plot2, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1n_nmds$location))>1 && length(unique(beta_q1n_nmds$location))<=8){
-group_n <- length(unique(beta_q1n_nmds$location))
-beta_q1n_nmds %>%
-			group_by(location) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=location)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Location"))
+if (length(unique(beta_q1n_nmds$location)) > 1 && length(unique(beta_q1n_nmds$location)) <= 8) {
+  group_n <- length(unique(beta_q1n_nmds$location))
+  beta_q1n_nmds %>%
+    group_by(location) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = location)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Location"))
 }
 
 #+ beta_neutral_plot3, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1n_nmds$region))>1 && length(unique(beta_q1n_nmds$region))<=8){
-group_n <- length(unique(beta_q1n_nmds$region))
-beta_q1n_nmds %>%
-			group_by(region) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=region)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Region"))
+if (length(unique(beta_q1n_nmds$region)) > 1 && length(unique(beta_q1n_nmds$region)) <= 8) {
+  group_n <- length(unique(beta_q1n_nmds$region))
+  beta_q1n_nmds %>%
+    group_by(region) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = region)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Region"))
 }
 
 #+ beta_neutral_plot4, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1n_nmds$country))>1 && length(unique(beta_q1n_nmds$country))<=8){
-group_n <- length(unique(beta_q1n_nmds$country))
-beta_q1n_nmds %>%
-			group_by(country) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=country)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Country"))
+if (length(unique(beta_q1n_nmds$country)) > 1 && length(unique(beta_q1n_nmds$country)) <= 8) {
+  group_n <- length(unique(beta_q1n_nmds$country))
+  beta_q1n_nmds %>%
+    group_by(country) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = country)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Country"))
 }
 
 #+ beta_neutral_plot5, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1n_nmds$sex))>1 && length(unique(beta_q1n_nmds$sex))<=8){
-group_n <- length(unique(beta_q1n_nmds$sex))
-beta_q1n_nmds %>%
-			group_by(sex) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=sex)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Sex"))
+if (length(unique(beta_q1n_nmds$sex)) > 1 && length(unique(beta_q1n_nmds$sex)) <= 8) {
+  group_n <- length(unique(beta_q1n_nmds$sex))
+  beta_q1n_nmds %>%
+    group_by(sex) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = sex)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Sex"))
 }
 
 #+ beta_neutral_plot6, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1n_nmds$sample_type))>1 && length(unique(beta_q1n_nmds$sample_type))<=8){
-group_n <- length(unique(beta_q1n_nmds$sample_type))
-beta_q1n_nmds %>%
-			group_by(sample_type) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=sample_type)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Sample type"))
+if (length(unique(beta_q1n_nmds$sample_type)) > 1 && length(unique(beta_q1n_nmds$sample_type)) <= 8) {
+  group_n <- length(unique(beta_q1n_nmds$sample_type))
+  beta_q1n_nmds %>%
+    group_by(sample_type) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = sample_type)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Sample type"))
 }
 
 #' \newpage
@@ -1478,147 +1535,147 @@ beta_q1n_nmds %>%
 #' vary between metadata variables.
 
 #+ beta_phylo, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
-beta_q1p <- hillpair(count_table_cov_size,q=1,tree=tree) %>%
-				select(first,second,C) %>% #based on dissimilarity metric C
-				as.data.frame() %>%
-				pivot_wider(names_from = first, values_from = C) %>%
-				column_to_rownames(var = "second") %>%
-				as.matrix() %>%
-				as.dist()
+beta_q1p <- hillpair(count_table_cov_size, q = 1, tree = tree) %>%
+  select(first, second, C) %>% # based on dissimilarity metric C
+  as.data.frame() %>%
+  pivot_wider(names_from = first, values_from = C) %>%
+  column_to_rownames(var = "second") %>%
+  as.matrix() %>%
+  as.dist()
 
 #+ beta_phylo_permanova_input, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
 sample_table_adonis <- sample_table %>%
-	filter(sample %in% labels(beta_q1p)) %>%
-	arrange(sample) %>%
-	mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-	select(sample,location,region,country,species,sex,sample_type) %>%
-	select_if(~ length(unique(.)) > 1) %>% #remove columns with all-identical values
-	column_to_rownames(var = "sample") %>%
-	as.data.frame()
+  filter(sample %in% labels(beta_q1p)) %>%
+  arrange(sample) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+  select(sample, location, region, country, species, sex, sample_type) %>%
+  select_if(~ length(unique(.)) > 1) %>% # remove columns with all-identical values
+  column_to_rownames(var = "sample") %>%
+  as.data.frame()
 
 #+ beta_phylo_permanova, echo=FALSE, warning=FALSE, comments="", message=FALSE
-if(ncol(sample_table_adonis)>1){
-	adonis2(formula=beta_q1p ~ ., data=sample_table_adonis[labels(beta_q1p),], permutations=999) %>%
-			as.matrix() %>%
-			kable()
-}else if(ncol(sample_table_adonis)==1){ # fix in case of a single variable
-	adonis_matrix<-adonis2(formula=beta_q1p ~ sample_table_adonis[labels(beta_q1p),], permutations=999) %>%
-			as.matrix()
-	rownames(adonis_matrix)[1] <- colnames(sample_table_adonis)
-	adonis_matrix %>%
-			kable()
-}else{
-	print("PERMANOVA was not conducted because of lack of metadata variability")
+if (ncol(sample_table_adonis) > 1) {
+  adonis2(formula = beta_q1p ~ ., data = sample_table_adonis[labels(beta_q1p), ], permutations = 999) %>%
+    as.matrix() %>%
+    kable()
+} else if (ncol(sample_table_adonis) == 1) { # fix in case of a single variable
+  adonis_matrix <- adonis2(formula = beta_q1p ~ sample_table_adonis[labels(beta_q1p), ], permutations = 999) %>%
+    as.matrix()
+  rownames(adonis_matrix)[1] <- colnames(sample_table_adonis)
+  adonis_matrix %>%
+    kable()
+} else {
+  print("PERMANOVA was not conducted because of lack of metadata variability")
 }
 
 #+ beta_phylo_nmds, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
 beta_q1p_nmds <- beta_q1p %>%
-				metaMDS(.,trymax = 500, k=2, verbosity=FALSE) %>%
-				scores() %>%
-				as_tibble(., rownames = "sample") %>%
-				left_join(sample_table, by = join_by(sample == sample)) %>%
-				mutate(location=paste0(round(longitude,2),"_",round(latitude,2)))
+  metaMDS(., trymax = 500, k = 2, verbosity = FALSE) %>%
+  scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(sample_table, by = join_by(sample == sample)) %>%
+  mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2)))
 
 #+ beta_phylo_plot1, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1p_nmds$species))>1 && length(unique(beta_q1p_nmds$species))<=8){
-group_n <- length(unique(beta_q1p_nmds$species))
-beta_q1p_nmds %>%
-			group_by(species) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Species"))
+if (length(unique(beta_q1p_nmds$species)) > 1 && length(unique(beta_q1p_nmds$species)) <= 8) {
+  group_n <- length(unique(beta_q1p_nmds$species))
+  beta_q1p_nmds %>%
+    group_by(species) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = species)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Species"))
 }
 
 #+ beta_phylo_plot2, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1p_nmds$location))>1 && length(unique(beta_q1p_nmds$location))<=8){
-group_n <- length(unique(beta_q1p_nmds$location))
-beta_q1p_nmds %>%
-			group_by(location) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=location)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Location"))
+if (length(unique(beta_q1p_nmds$location)) > 1 && length(unique(beta_q1p_nmds$location)) <= 8) {
+  group_n <- length(unique(beta_q1p_nmds$location))
+  beta_q1p_nmds %>%
+    group_by(location) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = location)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Location"))
 }
 
 #+ beta_phylo_plot3, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1p_nmds$region))>1 && length(unique(beta_q1p_nmds$region))<=8){
-group_n <- length(unique(beta_q1p_nmds$region))
-beta_q1p_nmds %>%
-			group_by(region) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=region)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Region"))
+if (length(unique(beta_q1p_nmds$region)) > 1 && length(unique(beta_q1p_nmds$region)) <= 8) {
+  group_n <- length(unique(beta_q1p_nmds$region))
+  beta_q1p_nmds %>%
+    group_by(region) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = region)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Region"))
 }
 
 #+ beta_phylo_plot4, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1p_nmds$country))>1 && length(unique(beta_q1p_nmds$country))<=8){
-group_n <- length(unique(beta_q1p_nmds$country))
-beta_q1p_nmds %>%
-			group_by(country) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=country)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Country"))
+if (length(unique(beta_q1p_nmds$country)) > 1 && length(unique(beta_q1p_nmds$country)) <= 8) {
+  group_n <- length(unique(beta_q1p_nmds$country))
+  beta_q1p_nmds %>%
+    group_by(country) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = country)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Country"))
 }
 
 #+ beta_phylo_plot5, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1p_nmds$sex))>1 && length(unique(beta_q1p_nmds$sex))<=8){
-group_n <- length(unique(beta_q1p_nmds$sex))
-beta_q1p_nmds %>%
-			group_by(sex) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=sex)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Sex"))
+if (length(unique(beta_q1p_nmds$sex)) > 1 && length(unique(beta_q1p_nmds$sex)) <= 8) {
+  group_n <- length(unique(beta_q1p_nmds$sex))
+  beta_q1p_nmds %>%
+    group_by(sex) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = sex)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Sex"))
 }
 
 #+ beta_phylo_plot6, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(length(unique(beta_q1p_nmds$sample_type))>1 && length(unique(beta_q1p_nmds$sample_type))<=8){
-group_n <- length(unique(beta_q1p_nmds$sample_type))
-beta_q1p_nmds %>%
-			group_by(sample_type) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=sample_type)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Sample type"))
+if (length(unique(beta_q1p_nmds$sample_type)) > 1 && length(unique(beta_q1p_nmds$sample_type)) <= 8) {
+  group_n <- length(unique(beta_q1p_nmds$sample_type))
+  beta_q1p_nmds %>%
+    group_by(sample_type) %>%
+    mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+    mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+    ungroup() %>%
+    ggplot(., aes(x = NMDS1, y = NMDS2, color = sample_type)) +
+    scale_color_manual(values = beta_colors[c(1:group_n)]) +
+    geom_point(size = 2) +
+    geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+    theme_classic() +
+    theme(legend.position = "right", legend.box = "vertical") +
+    guides(color = guide_legend(title = "Sample type"))
 }
 
 #' \newpage
@@ -1627,161 +1684,160 @@ beta_q1p_nmds %>%
 #' vary between metadata variables.
 
 #+ beta_func, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
-if(func == "yes"){
-beta_q1f <- hillpair(count_table_cov_size_filt,q=1,dist=dist) %>%
-				select(first,second,C) %>% #based on dissimilarity metric C
-				as.data.frame() %>%
-				pivot_wider(names_from = first, values_from = C) %>%
-				column_to_rownames(var = "second") %>%
-				as.matrix() %>%
-				as.dist()
+if (func == "yes") {
+  beta_q1f <- hillpair(count_table_cov_size_filt, q = 1, dist = dist) %>%
+    select(first, second, C) %>% # based on dissimilarity metric C
+    as.data.frame() %>%
+    pivot_wider(names_from = first, values_from = C) %>%
+    column_to_rownames(var = "second") %>%
+    as.matrix() %>%
+    as.dist()
 }
 
 #+ beta_func_permanova_input, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
-if(func == "yes"){
-sample_table_adonis <- sample_table %>%
-	filter(sample %in% labels(beta_q1f)) %>%
-	arrange(sample) %>%
-	mutate(location=paste0(round(longitude,2),"_",round(latitude,2))) %>%
-	select(sample,location,region,country,species,sex,sample_type) %>%
-	select_if(~ length(unique(.)) > 1) %>% #remove columns with all-identical values
-	column_to_rownames(var = "sample") %>%
-	as.data.frame()
+if (func == "yes") {
+  sample_table_adonis <- sample_table %>%
+    filter(sample %in% labels(beta_q1f)) %>%
+    arrange(sample) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2))) %>%
+    select(sample, location, region, country, species, sex, sample_type) %>%
+    select_if(~ length(unique(.)) > 1) %>% # remove columns with all-identical values
+    column_to_rownames(var = "sample") %>%
+    as.data.frame()
 }
 
 #+ beta_func_permanova, echo=FALSE, warning=FALSE, comments="", message=FALSE
-if(func == "yes"){
-	if(ncol(sample_table_adonis)>1){
-		adonis2(formula=beta_q1f ~ ., data=sample_table_adonis[labels(beta_q1f),], permutations=999) %>%
-				as.matrix() %>%
-				kable()
-	}else if(ncol(sample_table_adonis)==1){ # fix in case of a single variable
-		adonis_matrix<-adonis2(formula=beta_q1f ~ sample_table_adonis[labels(beta_q1f),], permutations=999) %>%
-				as.matrix()
-		rownames(adonis_matrix)[1] <- colnames(sample_table_adonis)
-		adonis_matrix %>%
-				kable()
-	}else{
-		print("PERMANOVA was not conducted because of lack of metadata variability")
-	}
-
+if (func == "yes") {
+  if (ncol(sample_table_adonis) > 1) {
+    adonis2(formula = beta_q1f ~ ., data = sample_table_adonis[labels(beta_q1f), ], permutations = 999) %>%
+      as.matrix() %>%
+      kable()
+  } else if (ncol(sample_table_adonis) == 1) { # fix in case of a single variable
+    adonis_matrix <- adonis2(formula = beta_q1f ~ sample_table_adonis[labels(beta_q1f), ], permutations = 999) %>%
+      as.matrix()
+    rownames(adonis_matrix)[1] <- colnames(sample_table_adonis)
+    adonis_matrix %>%
+      kable()
+  } else {
+    print("PERMANOVA was not conducted because of lack of metadata variability")
+  }
 }
 
 #+ beta_func_nmds, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide"
-if(func == "yes"){
-beta_q1f_nmds <- beta_q1f %>%
-				metaMDS(.,trymax = 500, k=2, verbosity=FALSE) %>%
-				scores() %>%
-				as_tibble(., rownames = "sample") %>%
-				left_join(sample_table, by = join_by(sample == sample)) %>%
-				mutate(location=paste0(round(longitude,2),"_",round(latitude,2)))
+if (func == "yes") {
+  beta_q1f_nmds <- beta_q1f %>%
+    metaMDS(., trymax = 500, k = 2, verbosity = FALSE) %>%
+    scores() %>%
+    as_tibble(., rownames = "sample") %>%
+    left_join(sample_table, by = join_by(sample == sample)) %>%
+    mutate(location = paste0(round(longitude, 2), "_", round(latitude, 2)))
 }
 
 #+ beta_func_plot1, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(func == "yes"){
-if(length(unique(beta_q1f_nmds$species))>1 && length(unique(beta_q1f_nmds$species))<=8){
-group_n <- length(unique(beta_q1f_nmds$species))
-beta_q1f_nmds %>%
-			group_by(species) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Species"))
-}
+if (func == "yes") {
+  if (length(unique(beta_q1f_nmds$species)) > 1 && length(unique(beta_q1f_nmds$species)) <= 8) {
+    group_n <- length(unique(beta_q1f_nmds$species))
+    beta_q1f_nmds %>%
+      group_by(species) %>%
+      mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+      mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+      ungroup() %>%
+      ggplot(., aes(x = NMDS1, y = NMDS2, color = species)) +
+      scale_color_manual(values = beta_colors[c(1:group_n)]) +
+      geom_point(size = 2) +
+      geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+      theme_classic() +
+      theme(legend.position = "right", legend.box = "vertical") +
+      guides(color = guide_legend(title = "Species"))
+  }
 }
 #+ beta_func_plot2, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(func == "yes"){
-if(length(unique(beta_q1f_nmds$location))>1 && length(unique(beta_q1f_nmds$location))<=8){
-group_n <- length(unique(beta_q1f_nmds$location))
-beta_q1f_nmds %>%
-			group_by(location) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=location)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Location"))
-}
+if (func == "yes") {
+  if (length(unique(beta_q1f_nmds$location)) > 1 && length(unique(beta_q1f_nmds$location)) <= 8) {
+    group_n <- length(unique(beta_q1f_nmds$location))
+    beta_q1f_nmds %>%
+      group_by(location) %>%
+      mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+      mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+      ungroup() %>%
+      ggplot(., aes(x = NMDS1, y = NMDS2, color = location)) +
+      scale_color_manual(values = beta_colors[c(1:group_n)]) +
+      geom_point(size = 2) +
+      geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+      theme_classic() +
+      theme(legend.position = "right", legend.box = "vertical") +
+      guides(color = guide_legend(title = "Location"))
+  }
 }
 #+ beta_func_plot3, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(func == "yes"){
-if(length(unique(beta_q1f_nmds$region))>1 && length(unique(beta_q1f_nmds$region))<=8){
-group_n <- length(unique(beta_q1f_nmds$region))
-beta_q1f_nmds %>%
-			group_by(region) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=region)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Region"))
-}
+if (func == "yes") {
+  if (length(unique(beta_q1f_nmds$region)) > 1 && length(unique(beta_q1f_nmds$region)) <= 8) {
+    group_n <- length(unique(beta_q1f_nmds$region))
+    beta_q1f_nmds %>%
+      group_by(region) %>%
+      mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+      mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+      ungroup() %>%
+      ggplot(., aes(x = NMDS1, y = NMDS2, color = region)) +
+      scale_color_manual(values = beta_colors[c(1:group_n)]) +
+      geom_point(size = 2) +
+      geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+      theme_classic() +
+      theme(legend.position = "right", legend.box = "vertical") +
+      guides(color = guide_legend(title = "Region"))
+  }
 }
 #+ beta_func_plot4, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(func == "yes"){
-if(length(unique(beta_q1f_nmds$country))>1 && length(unique(beta_q1f_nmds$country))<=8){
-group_n <- length(unique(beta_q1f_nmds$country))
-beta_q1f_nmds %>%
-			group_by(country) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=country)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Country"))
-}
+if (func == "yes") {
+  if (length(unique(beta_q1f_nmds$country)) > 1 && length(unique(beta_q1f_nmds$country)) <= 8) {
+    group_n <- length(unique(beta_q1f_nmds$country))
+    beta_q1f_nmds %>%
+      group_by(country) %>%
+      mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+      mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+      ungroup() %>%
+      ggplot(., aes(x = NMDS1, y = NMDS2, color = country)) +
+      scale_color_manual(values = beta_colors[c(1:group_n)]) +
+      geom_point(size = 2) +
+      geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+      theme_classic() +
+      theme(legend.position = "right", legend.box = "vertical") +
+      guides(color = guide_legend(title = "Country"))
+  }
 }
 #+ beta_func_plot5, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(func == "yes"){
-if(length(unique(beta_q1f_nmds$sex))>1 && length(unique(beta_q1f_nmds$sex))<=8){
-group_n <- length(unique(beta_q1f_nmds$sex))
-beta_q1f_nmds %>%
-			group_by(sex) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=sex)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Sex"))
-}
+if (func == "yes") {
+  if (length(unique(beta_q1f_nmds$sex)) > 1 && length(unique(beta_q1f_nmds$sex)) <= 8) {
+    group_n <- length(unique(beta_q1f_nmds$sex))
+    beta_q1f_nmds %>%
+      group_by(sex) %>%
+      mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+      mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+      ungroup() %>%
+      ggplot(., aes(x = NMDS1, y = NMDS2, color = sex)) +
+      scale_color_manual(values = beta_colors[c(1:group_n)]) +
+      geom_point(size = 2) +
+      geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+      theme_classic() +
+      theme(legend.position = "right", legend.box = "vertical") +
+      guides(color = guide_legend(title = "Sex"))
+  }
 }
 #+ beta_func_plot6, echo=FALSE, warning=FALSE, comments="", message=FALSE, results="hide", fig.height=4
-if(func == "yes"){
-if(length(unique(beta_q1f_nmds$sample_type))>1 && length(unique(beta_q1f_nmds$sample_type))<=8){
-group_n <- length(unique(beta_q1f_nmds$sample_type))
-beta_q1f_nmds %>%
-			group_by(sample_type) %>%
-			mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
-			mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
-			ungroup() %>%
-			ggplot(., aes(x=NMDS1,y=NMDS2, color=sample_type)) +
-				scale_color_manual(values=beta_colors[c(1:group_n)]) +
-				geom_point(size=2) +
-				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
-				theme_classic() +
-				theme(legend.position="right", legend.box="vertical") +
-				guides(color=guide_legend(title="Sample type"))
-}
+if (func == "yes") {
+  if (length(unique(beta_q1f_nmds$sample_type)) > 1 && length(unique(beta_q1f_nmds$sample_type)) <= 8) {
+    group_n <- length(unique(beta_q1f_nmds$sample_type))
+    beta_q1f_nmds %>%
+      group_by(sample_type) %>%
+      mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+      mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+      ungroup() %>%
+      ggplot(., aes(x = NMDS1, y = NMDS2, color = sample_type)) +
+      scale_color_manual(values = beta_colors[c(1:group_n)]) +
+      geom_point(size = 2) +
+      geom_segment(aes(x = x_cen, y = y_cen, xend = NMDS1, yend = NMDS2), alpha = 0.2) +
+      theme_classic() +
+      theme(legend.position = "right", legend.box = "vertical") +
+      guides(color = guide_legend(title = "Sample type"))
+  }
 }
