@@ -44,11 +44,15 @@ heatmap <- ehi_phylum_colors %>%
 The next step is to plot the actual tree.
 ```{r tree_plot, warning=FALSE, comments="", message=FALSE, fig.height=8}
 # Create baseline circular tree
-circular_tree <- force.ultrametric(tree, method = "extend") %>%
-  ggtree(., layout = "circular", size = 0.3, angle = 45)
+circular_tree <- 
+  tree %>% 
+  force.ultrametric(method = "extend", message = FALSE) %>%
+  ggtree(layout = "circular", size = 0.3, angle = 45)
 
 # Add phylum colors ring
-circular_tree <- gheatmap(circular_tree, heatmap, offset = 0.85, width = 0.1, colnames = FALSE) +
+circular_tree <- 
+  circular_tree %>% 
+  gheatmap(heatmap, offset = 0.85, width = 0.1, colnames = FALSE) +
   scale_fill_manual(values = colors_alphabetic) +
   geom_tiplab2(size = 1, hjust = -0.1) +
   theme(legend.position = "none", plot.margin = margin(0, 0, 0, 0), panel.margin = margin(0, 0, 0, 0))
@@ -218,18 +222,24 @@ Using the code below, you can create a heatmap with an associated phylogenetic t
 
 ```{r mag_kegg_heatmap, warning=FALSE, comments="", message=FALSE, fig.height=8}
 # Generate a basal utrametric tree for the sake of visualisation
-kegg_tree <- force.ultrametric(tree, method = "extend") %>%
-  ggtree(., size = 0.3)
+kegg_tree <- 
+  tree %>% 
+  force.ultrametric(method = "extend", message = FALSE) %>%
+  ggtree(size = 0.3)
 
 # Add phylum colors next to the tree tips
-kegg_tree <- gheatmap(kegg_tree, heatmap, offset = 0, width = 0.1, colnames = FALSE) +
+kegg_tree <- 
+  kegg_tree %>% 
+  gheatmap(heatmap, offset = 0, width = 0.1, colnames = FALSE) +
   scale_fill_manual(values = colors_alphabetic)
 
 # Reset fill scale to use a different colour profile in the heatmap
 kegg_tree <- kegg_tree + new_scale_fill()
 
 # Add KEGG heatmap
-kegg_tree <- gheatmap(kegg_tree, kegg_table, offset = 0.5, width = 3.5, colnames = FALSE) +
+kegg_tree <- 
+  kegg_tree %>% 
+  gheatmap(kegg_table, offset = 0.5, width = 3.5, colnames = FALSE) +
   vexpand(.08) +
   coord_cartesian(clip = "off") +
   scale_fill_gradient(low = "#f4f4f4", high = "steelblue", na.value = "white")

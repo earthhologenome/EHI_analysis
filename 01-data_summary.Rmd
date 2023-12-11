@@ -24,9 +24,9 @@ batch <- "DMB0038"
 
 # Microbiome count table
 count_table <- read_tsv(str_glue("data/{batch}_counts.tsv.gz"))
-
 # Microbiome coverage table
 coverage_table <- read_tsv(str_glue("data/{batch}_coverage.tsv.gz"))
+
 
 # Sample metadata table
 sample_table <- read_tsv(str_glue("data/{batch}_metadata.tsv.gz")) %>% 
@@ -42,7 +42,7 @@ mags_table <-
 tree <- read.tree(str_glue("data/{batch}.tree.gz"))
 
 # Microbiome functional attribute table
-kegg_table <- read_tsv(str_glue("data/{batch}_merged_kegg.tsv.gz"))
+kegg_table <- read_tsv(str_glue("data/{batch}_merged_kegg.tsv.gz")) %>% column_to_rownames("genome")
 ```
 
 ## General data statistics

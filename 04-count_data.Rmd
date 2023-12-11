@@ -9,10 +9,11 @@ Mapping of sequencing reads against the reference genome catalogue is not perfec
 ```{r coverage_filtering}
 min_coverage <- 0.3
 count_table_cov <- coverage_table %>%
+  column_to_rownames("Genome") %>% 
   mutate(across(everything(), ~ ifelse(. > min_coverage, 1, 0))) %>%
-  map2_df(., count_table, ~ .x * .y) %>%
+  map2_df(., count_table %>% column_to_rownames("Genome"), ~ .x * .y) %>%
   as.data.frame()
-rownames(count_table_cov) <- rownames(coverage_table)
+rownames(count_table_cov) <- coverage_table$Genome
 ```
 
 ## Genome size normalisation
@@ -20,7 +21,8 @@ rownames(count_table_cov) <- rownames(coverage_table)
 Bacterial genomes can vary between 1 and 8 MB, which make relative representation of each genome dependent on its size. To account for genome size biases, read-counts can be normalised by applying a normalisation factor that modifies the read numbers according to the size of each genome compared to the average genome size in the dataset.
 
 ```{r genome_size_normalisation}
-genome_read_sizes <- mags_table[rownames(count_table_cov), ] %>%
+genome_read_sizes <- 
+  mags_table[rownames(count_table_cov), ] %>%
   select(mag_size) %>%
   mutate(mag_size = mag_size / 150) %>%
   pull()
