@@ -29,7 +29,8 @@ count_table <- read_tsv(str_glue("data/{batch}_counts.tsv.gz"))
 coverage_table <- read_tsv(str_glue("data/{batch}_coverage.tsv.gz"))
 
 # Sample metadata table
-sample_table <- read_tsv(str_glue("data/{batch}_metadata.tsv.gz"))
+sample_table <- read_tsv(str_glue("data/{batch}_metadata.tsv.gz")) %>% 
+  rename(sample = EHI_plaintext)
 
 # Microbiome metadata table
 mags_table <-
@@ -57,7 +58,7 @@ ncol(count_table)
 ```{r general_stats_data_2}
 sample_table %>%
   select(
-    sample = EHI_plaintext,
+    sample,
     mg_bases = metagenomic_bases,
     hg_bases = host_bases,
     lost_bases_ratio = bases_lost_fastp_percent
@@ -129,16 +130,14 @@ Then, this new table can be used to generate the map with location shape sizes i
 
 ```{r geography_map, warning=FALSE}
 sample_table_summary %>%
-  ggplot(.) +
-  # render map
-  geom_map(
+  ggplot() +
+  geom_map(  # render map
     data = map_data("world"),
     map = map_data("world"),
     aes(long, lat, map_id = region),
     color = "white", fill = "#cccccc", linewidth = 0.2
   ) +
-  # render points
-  geom_point(
+  geom_point(  # render points
     aes(x = longitude, y = latitude, size = count),
     alpha = 0.5, shape = 16
   ) +
